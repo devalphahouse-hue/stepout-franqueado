@@ -37,7 +37,7 @@ class _CobrancaCriadaWidgetState extends State<CobrancaCriadaWidget> {
 
     _model.textController ??= TextEditingController(
         text:
-            'https://aluno.stepout.com.br//cobranca?idcobranca=${widget!.idCobranca}');
+            'https://aluno.stepout.com.br/cobranca?idcobranca=${widget!.idCobranca}');
     _model.textFieldFocusNode ??= FocusNode();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
@@ -221,7 +221,7 @@ class _CobrancaCriadaWidgetState extends State<CobrancaCriadaWidget> {
                             onTap: () async {
                               await Clipboard.setData(ClipboardData(
                                   text:
-                                      'https://stepout-aluno.flutterflow.app/cobranca?idcobranca=${widget!.idCobranca}'));
+                                      'https://aluno.stepout.com.br/cobranca?idcobranca=${widget!.idCobranca}'));
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(

@@ -1071,7 +1071,7 @@ class _IndicacoesWidgetState extends State<IndicacoesWidget> {
                                                       await Clipboard.setData(
                                                           ClipboardData(
                                                               text:
-                                                                  'https://stepout-franqueado.flutterflow.app/planos?indication=${FFAppState().idfranquia}'));
+                                                                  'https://franqueado.stepout.com.br/planos?indication=${FFAppState().idfranquia}'));
                                                     },
                                                     text: 'Copiar link',
                                                     options: FFButtonOptions(

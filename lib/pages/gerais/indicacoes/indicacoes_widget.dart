@@ -33,7 +33,7 @@ class _IndicacoesWidgetState extends State<IndicacoesWidget> {
 
     _model.textController ??= TextEditingController(
         text:
-            'https://stepout-franqueado.flutterflow.app/planos?indication=${FFAppState().idfranquia}');
+            'https://franqueado.stepout.com.br/planos?indication=${FFAppState().idfranquia}');
     _model.textFieldFocusNode ??= FocusNode();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));

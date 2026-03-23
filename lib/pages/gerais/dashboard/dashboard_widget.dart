@@ -91,7 +91,6 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                             ),
                           ),
                           builder: (context, snapshot) {
-                            // Customize what your widget looks like when it's loading.
                             if (!snapshot.hasData) {
                               return Center(
                                 child: SizedBox(
@@ -161,6 +160,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
+                                        // CARD: Alunos Cadastrados
                                         Expanded(
                                           child: Material(
                                             color: Colors.transparent,
@@ -208,17 +208,22 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                           MainAxisAlignment
                                                               .spaceBetween,
                                                       children: [
+                                                        // CORREÇÃO 1: filtrar alunos pela franquia logada
                                                         FutureBuilder<
                                                             List<
                                                                 MetaAlunosRow>>(
                                                           future:
                                                               MetaAlunosTable()
                                                                   .queryRows(
-                                                            queryFn: (q) => q,
+                                                            queryFn: (q) => q
+                                                                .eqOrNull(
+                                                              'franquia_id',
+                                                              FFAppState()
+                                                                  .idfranquia,
+                                                            ),
                                                           ),
                                                           builder: (context,
                                                               snapshot) {
-                                                            // Customize what your widget looks like when it's loading.
                                                             if (!snapshot
                                                                 .hasData) {
                                                               return Center(
@@ -339,6 +344,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                             ),
                                           ),
                                         ),
+                                        // CARD: Professores Cadastrados
                                         Expanded(
                                           child: Material(
                                             color: Colors.transparent,
@@ -386,17 +392,22 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                           MainAxisAlignment
                                                               .spaceBetween,
                                                       children: [
+                                                        // CORREÇÃO 2: filtrar professores pela franquia logada
                                                         FutureBuilder<
                                                             List<
                                                                 MetaProfessorRow>>(
                                                           future:
                                                               MetaProfessorTable()
                                                                   .queryRows(
-                                                            queryFn: (q) => q,
+                                                            queryFn: (q) => q
+                                                                .eqOrNull(
+                                                              'franquia',
+                                                              FFAppState()
+                                                                  .idfranquia,
+                                                            ),
                                                           ),
                                                           builder: (context,
                                                               snapshot) {
-                                                            // Customize what your widget looks like when it's loading.
                                                             if (!snapshot
                                                                 .hasData) {
                                                               return Center(
@@ -517,17 +528,27 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                             ),
                                           ),
                                         ),
+                                        // CARD: Faturamento
                                         Expanded(
                                           child:
                                               FutureBuilder<List<CobrancasRow>>(
+                                            // CORREÇÃO 3: filtrar por franquia + status CONFIRMED + tipo aluno
                                             future: CobrancasTable().queryRows(
-                                              queryFn: (q) => q.eqOrNull(
-                                                'user_id',
-                                                FFAppState().idfranquia,
-                                              ),
+                                              queryFn: (q) => q
+                                                  .eqOrNull(
+                                                    'if_franquia',
+                                                    FFAppState().idfranquia,
+                                                  )
+                                                  .eqOrNull(
+                                                    'status_cobranca',
+                                                    'CONFIRMED',
+                                                  )
+                                                  .eqOrNull(
+                                                    'tipo_cobranca',
+                                                    'aluno',
+                                                  ),
                                             ),
                                             builder: (context, snapshot) {
-                                              // Customize what your widget looks like when it's loading.
                                               if (!snapshot.hasData) {
                                                 return Center(
                                                   child: SizedBox(
@@ -728,7 +749,6 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                             ),
                           ),
                           builder: (context, snapshot) {
-                            // Customize what your widget looks like when it's loading.
                             if (!snapshot.hasData) {
                               return Center(
                                 child: SizedBox(

@@ -1,6 +1,7 @@
 import '/auth/supabase_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
 import '/backend/schema/structs/index.dart';
+import '/backend/supabase/supabase.dart';
 import '/componentes/empty_list/empty_list_widget.dart';
 import '/componentes/sidebar/sidebar_widget.dart';
 import '/flutter_flow/flutter_flow_data_table.dart';
@@ -49,6 +50,43 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
     _model.dispose();
 
     super.dispose();
+  }
+
+  // Função para inativar aluno com confirmação
+  Future<void> _inativarAluno(
+      BuildContext context, String metaAlunoId) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Inativar Aluno'),
+        content: Text(
+            'Tem certeza que deseja inativar este aluno? Ele não aparecerá mais na lista, mas seus dados serão mantidos.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text('Inativar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await MetaAlunosTable().update(
+        data: {'ativo': false},
+        matchingRows: (rows) => rows.eqOrNull('id', metaAlunoId),
+      );
+
+      safeSetState(() {
+        _model.clearListaAlunosCache();
+        _model.apiRequestCompleted = false;
+      });
+      await _model.waitForApiRequestCompleted();
+    }
   }
 
   @override
@@ -159,7 +197,6 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
                                   return result;
                                 }),
                                 builder: (context, snapshot) {
-                                  // Customize what your widget looks like when it's loading.
                                   if (!snapshot.hasData) {
                                     return Center(
                                       child: SizedBox(
@@ -196,10 +233,7 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
                                           BoxShadow(
                                             blurRadius: 4.0,
                                             color: Color(0x33000000),
-                                            offset: Offset(
-                                              0.0,
-                                              2.0,
-                                            ),
+                                            offset: Offset(0.0, 2.0),
                                           )
                                         ],
                                         borderRadius:
@@ -693,78 +727,13 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
                                                         label: DefaultTextStyle
                                                             .merge(
                                                           softWrap: true,
-                                                          child: Text(
-                                                            'Alunos',
-                                                            style: FlutterFlowTheme
-                                                                    .of(context)
-                                                                .titleSmall
-                                                                .override(
-                                                                  font: GoogleFonts
-                                                                      .interTight(
-                                                                    fontWeight: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .titleSmall
-                                                                        .fontWeight,
-                                                                    fontStyle: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .titleSmall
-                                                                        .fontStyle,
-                                                                  ),
-                                                                  letterSpacing:
-                                                                      0.0,
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontStyle,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        fixedWidth: 10.0,
-                                                      ),
-                                                      DataColumn2(
-                                                        label: DefaultTextStyle
-                                                            .merge(
-                                                          softWrap: true,
-                                                          child: Text(
-                                                            ' ',
-                                                            style: FlutterFlowTheme
-                                                                    .of(context)
-                                                                .bodyMedium
-                                                                .override(
-                                                                  font:
-                                                                      GoogleFonts
-                                                                          .inter(
-                                                                    fontWeight: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodyMedium
-                                                                        .fontWeight,
-                                                                    fontStyle: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodyMedium
-                                                                        .fontStyle,
-                                                                  ),
-                                                                  letterSpacing:
-                                                                      0.0,
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodyMedium
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodyMedium
-                                                                      .fontStyle,
-                                                                ),
-                                                          ),
+                                                          child: Container(),
                                                         ),
                                                         fixedWidth:
                                                             MediaQuery.sizeOf(
                                                                         context)
                                                                     .width *
-                                                                0.05,
+                                                                0.08,
                                                       ),
                                                     ],
                                                     dataRowBuilder:
@@ -792,9 +761,8 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
                                                                   .of(context)
                                                               .bodyMedium
                                                               .override(
-                                                                font:
-                                                                    GoogleFonts
-                                                                        .inter(
+                                                                font: GoogleFonts
+                                                                    .inter(
                                                                   fontWeight: FlutterFlowTheme.of(
                                                                           context)
                                                                       .bodyMedium
@@ -822,9 +790,8 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
                                                                   .of(context)
                                                               .bodyMedium
                                                               .override(
-                                                                font:
-                                                                    GoogleFonts
-                                                                        .inter(
+                                                                font: GoogleFonts
+                                                                    .inter(
                                                                   fontWeight: FlutterFlowTheme.of(
                                                                           context)
                                                                       .bodyMedium
@@ -853,9 +820,8 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
                                                                   .of(context)
                                                               .bodyMedium
                                                               .override(
-                                                                font:
-                                                                    GoogleFonts
-                                                                        .inter(
+                                                                font: GoogleFonts
+                                                                    .inter(
                                                                   fontWeight: FlutterFlowTheme.of(
                                                                           context)
                                                                       .bodyMedium
@@ -884,9 +850,8 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
                                                                   .of(context)
                                                               .bodyMedium
                                                               .override(
-                                                                font:
-                                                                    GoogleFonts
-                                                                        .inter(
+                                                                font: GoogleFonts
+                                                                    .inter(
                                                                   fontWeight: FlutterFlowTheme.of(
                                                                           context)
                                                                       .bodyMedium
@@ -908,75 +873,79 @@ class _ListaAlunosWidgetState extends State<ListaAlunosWidget> {
                                                                     .fontStyle,
                                                               ),
                                                         ),
-                                                        Text(
-                                                          'Edit Column 5',
-                                                          style: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .bodyMedium
-                                                              .override(
-                                                                font:
-                                                                    GoogleFonts
-                                                                        .inter(
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodyMedium
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodyMedium
-                                                                      .fontStyle,
-                                                                ),
-                                                                letterSpacing:
-                                                                    0.0,
-                                                                fontWeight: FlutterFlowTheme.of(
+                                                        // Ícones: Editar + Lixo
+                                                        Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .end,
+                                                          children: [
+                                                            InkWell(
+                                                              splashColor: Colors
+                                                                  .transparent,
+                                                              focusColor: Colors
+                                                                  .transparent,
+                                                              hoverColor: Colors
+                                                                  .transparent,
+                                                              highlightColor:
+                                                                  Colors
+                                                                      .transparent,
+                                                              onTap: () async {
+                                                                context
+                                                                    .pushNamed(
+                                                                  DetalhesAlunoWidget
+                                                                      .routeName,
+                                                                  queryParameters:
+                                                                      {
+                                                                    'idaluno':
+                                                                        serializeParam(
+                                                                      listaAlunosItem
+                                                                          .userId,
+                                                                      ParamType
+                                                                          .String,
+                                                                    ),
+                                                                  }.withoutNulls,
+                                                                );
+                                                              },
+                                                              child: FaIcon(
+                                                                FontAwesomeIcons
+                                                                    .solidEdit,
+                                                                color: FlutterFlowTheme.of(
                                                                         context)
-                                                                    .bodyMedium
-                                                                    .fontWeight,
-                                                                fontStyle: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodyMedium
-                                                                    .fontStyle,
+                                                                    .primaryText,
+                                                                size: 22.0,
                                                               ),
-                                                        ),
-                                                        Align(
-                                                          alignment:
-                                                              AlignmentDirectional(
-                                                                  1.0, 0.0),
-                                                          child: InkWell(
-                                                            splashColor: Colors
-                                                                .transparent,
-                                                            focusColor: Colors
-                                                                .transparent,
-                                                            hoverColor: Colors
-                                                                .transparent,
-                                                            highlightColor:
-                                                                Colors
-                                                                    .transparent,
-                                                            onTap: () async {
-                                                              context.pushNamed(
-                                                                DetalhesAlunoWidget
-                                                                    .routeName,
-                                                                queryParameters:
-                                                                    {
-                                                                  'idaluno':
-                                                                      serializeParam(
-                                                                    listaAlunosItem
-                                                                        .userId,
-                                                                    ParamType
-                                                                        .String,
-                                                                  ),
-                                                                }.withoutNulls,
-                                                              );
-                                                            },
-                                                            child: FaIcon(
-                                                              FontAwesomeIcons
-                                                                  .solidEdit,
-                                                              color: FlutterFlowTheme
-                                                                      .of(context)
-                                                                  .primaryText,
-                                                              size: 24.0,
                                                             ),
-                                                          ),
+                                                            SizedBox(
+                                                                width: 12.0),
+                                                            // Ícone lixo — inativar aluno
+                                                            InkWell(
+                                                              splashColor: Colors
+                                                                  .transparent,
+                                                              focusColor: Colors
+                                                                  .transparent,
+                                                              hoverColor: Colors
+                                                                  .transparent,
+                                                              highlightColor:
+                                                                  Colors
+                                                                      .transparent,
+                                                              onTap: () async {
+                                                                await _inativarAluno(
+                                                                  context,
+                                                                  listaAlunosItem
+                                                                      .metaAlunoId,
+                                                                );
+                                                              },
+                                                              child: FaIcon(
+                                                                FontAwesomeIcons
+                                                                    .trashAlt,
+                                                                color:
+                                                                    Colors.red,
+                                                                size: 22.0,
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
                                                       ]
                                                           .map((c) =>

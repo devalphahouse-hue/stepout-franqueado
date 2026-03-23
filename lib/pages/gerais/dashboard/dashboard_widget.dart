@@ -1,3 +1,5 @@
+import '/auth/supabase_auth/auth_util.dart';
+import '/backend/api_requests/api_calls.dart';
 import '/backend/schema/structs/index.dart';
 import '/backend/supabase/supabase.dart';
 import '/componentes/sidebar/sidebar_widget.dart';
@@ -208,19 +210,17 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                           MainAxisAlignment
                                                               .spaceBetween,
                                                       children: [
-                                                        // CORREÇÃO 1: filtrar alunos pela franquia logada
+                                                        // CORREÇÃO 1: usar API get_students_by_franquia (mesma da página de Alunos)
                                                         FutureBuilder<
-                                                            List<
-                                                                MetaAlunosRow>>(
-                                                          future:
-                                                              MetaAlunosTable()
-                                                                  .queryRows(
-                                                            queryFn: (q) => q
-                                                                .eqOrNull(
-                                                              'franquia_id',
-                                                              FFAppState()
-                                                                  .idfranquia,
-                                                            ),
+                                                            ApiCallResponse>(
+                                                          future: SupabaseGroup
+                                                              .listaAlunosCall
+                                                              .call(
+                                                            pFranquiaId:
+                                                                FFAppState()
+                                                                    .idfranquia,
+                                                            token:
+                                                                currentJwtToken,
                                                           ),
                                                           builder: (context,
                                                               snapshot) {
@@ -243,13 +243,16 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                                 ),
                                                               );
                                                             }
-                                                            List<MetaAlunosRow>
-                                                                textMetaAlunosRowList =
+                                                            final alunosResponse =
                                                                 snapshot.data!;
+                                                            final totalAlunos =
+                                                                (alunosResponse
+                                                                        .jsonBody
+                                                                        .toList())
+                                                                    .length;
 
                                                             return Text(
-                                                              textMetaAlunosRowList
-                                                                  .length
+                                                              totalAlunos
                                                                   .toString(),
                                                               style: FlutterFlowTheme
                                                                       .of(context)
@@ -392,19 +395,17 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                           MainAxisAlignment
                                                               .spaceBetween,
                                                       children: [
-                                                        // CORREÇÃO 2: filtrar professores pela franquia logada
+                                                        // CORREÇÃO 2: usar API list_professores_json (mesma da página de Professores)
                                                         FutureBuilder<
-                                                            List<
-                                                                MetaProfessorRow>>(
-                                                          future:
-                                                              MetaProfessorTable()
-                                                                  .queryRows(
-                                                            queryFn: (q) => q
-                                                                .eqOrNull(
-                                                              'franquia',
-                                                              FFAppState()
-                                                                  .idfranquia,
-                                                            ),
+                                                            ApiCallResponse>(
+                                                          future: SupabaseGroup
+                                                              .listaProfessoresCall
+                                                              .call(
+                                                            pIdFranquia:
+                                                                FFAppState()
+                                                                    .idfranquia,
+                                                            token:
+                                                                currentJwtToken,
                                                           ),
                                                           builder: (context,
                                                               snapshot) {
@@ -427,13 +428,16 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                                 ),
                                                               );
                                                             }
-                                                            List<MetaProfessorRow>
-                                                                textMetaProfessorRowList =
+                                                            final professoresResponse =
                                                                 snapshot.data!;
+                                                            final totalProfessores =
+                                                                (professoresResponse
+                                                                        .jsonBody
+                                                                        .toList())
+                                                                    .length;
 
                                                             return Text(
-                                                              textMetaProfessorRowList
-                                                                  .length
+                                                              totalProfessores
                                                                   .toString(),
                                                               style: FlutterFlowTheme
                                                                       .of(context)

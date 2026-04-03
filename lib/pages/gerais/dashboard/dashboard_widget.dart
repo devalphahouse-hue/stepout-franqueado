@@ -246,9 +246,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                             final alunosResponse =
                                                                 snapshot.data!;
                                                             final totalAlunos =
-                                                                (alunosResponse
-                                                                        .jsonBody
-                                                                        .toList())
+                                                                alunosResponse
                                                                     .length;
 
                                                             return Text(
@@ -431,9 +429,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                             final professoresResponse =
                                                                 snapshot.data!;
                                                             final totalProfessores =
-                                                                (professoresResponse
-                                                                        .jsonBody
-                                                                        .toList())
+                                                                professoresResponse
                                                                     .length;
 
                                                             return Text(

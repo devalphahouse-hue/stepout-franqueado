@@ -56,4 +56,7 @@ class MetaAlunosRow extends SupabaseDataRow {
 
   String? get turma => getField<String>('turma');
   set turma(String? value) => setField<String>('turma', value);
+
+  DateTime? get deletedAt => getField<DateTime>('deleted_at');
+  set deletedAt(DateTime? value) => setField<DateTime>('deleted_at', value);
 }

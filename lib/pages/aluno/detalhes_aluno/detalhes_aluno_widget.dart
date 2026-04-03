@@ -11,6 +11,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import '/flutter_flow/upload_data.dart';
 import 'dart:ui';
+import '/index.dart';
 import 'dart:async';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/foundation.dart';
@@ -221,20 +222,95 @@ class _DetalhesAlunoWidgetState extends State<DetalhesAlunoWidget> {
                                                       .fontStyle,
                                             ),
                                       ),
-                                      InkWell(
-                                        splashColor: Colors.transparent,
-                                        focusColor: Colors.transparent,
-                                        hoverColor: Colors.transparent,
-                                        highlightColor: Colors.transparent,
-                                        onTap: () async {
-                                          context.safePop();
-                                        },
-                                        child: Icon(
-                                          Icons.undo,
-                                          color: FlutterFlowTheme.of(context)
-                                              .primaryText,
-                                          size: 24.0,
-                                        ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          InkWell(
+                                            splashColor: Colors.transparent,
+                                            focusColor: Colors.transparent,
+                                            hoverColor: Colors.transparent,
+                                            highlightColor: Colors.transparent,
+                                            onTap: () async {
+                                              var confirmDialogResponse =
+                                                  await showDialog<bool>(
+                                                context: context,
+                                                builder: (alertDialogContext) {
+                                                  return WebViewAware(
+                                                    child: AlertDialog(
+                                                      title: Text(
+                                                          'Tem certeza que deseja excluir este aluno?'),
+                                                      content: Text(
+                                                          'O registro será desativado.'),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  alertDialogContext,
+                                                                  false),
+                                                          child:
+                                                              Text('Cancelar'),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  alertDialogContext,
+                                                                  true),
+                                                          child:
+                                                              Text('Excluir'),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                              );
+                                              if (confirmDialogResponse ?? false) {
+                                                final now = DateTime.now().toUtc().toIso8601String();
+                                                await MetaAlunosTable().update(
+                                                  data: {'deleted_at': now},
+                                                  matchingRows: (rows) =>
+                                                      rows.eqOrNull(
+                                                    'user_id',
+                                                    widget!.idaluno,
+                                                  ),
+                                                );
+                                                await UsersTable().update(
+                                                  data: {'deleted_at': now},
+                                                  matchingRows: (rows) =>
+                                                      rows.eqOrNull(
+                                                    'id',
+                                                    widget!.idaluno,
+                                                  ),
+                                                );
+                                                context.goNamed(
+                                                    ListaAlunosWidget.routeName);
+                                              }
+                                            },
+                                            child: Icon(
+                                              Icons.delete_outline,
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .error,
+                                              size: 24.0,
+                                            ),
+                                          ),
+                                          SizedBox(width: 16.0),
+                                          InkWell(
+                                            splashColor: Colors.transparent,
+                                            focusColor: Colors.transparent,
+                                            hoverColor: Colors.transparent,
+                                            highlightColor: Colors.transparent,
+                                            onTap: () async {
+                                              context.safePop();
+                                            },
+                                            child: Icon(
+                                              Icons.undo,
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .primaryText,
+                                              size: 24.0,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),

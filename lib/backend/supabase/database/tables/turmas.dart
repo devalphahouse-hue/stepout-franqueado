@@ -44,4 +44,7 @@ class TurmasRow extends SupabaseDataRow {
   List<String> get alunosTurma => getListField<String>('alunos_turma');
   set alunosTurma(List<String>? value) =>
       setListField<String>('alunos_turma', value);
+
+  DateTime? get deletedAt => getField<DateTime>('deleted_at');
+  set deletedAt(DateTime? value) => setField<DateTime>('deleted_at', value);
 }

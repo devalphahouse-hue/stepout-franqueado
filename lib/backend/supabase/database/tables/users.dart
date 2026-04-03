@@ -74,4 +74,7 @@ class UsersRow extends SupabaseDataRow {
 
   DateTime? get ativoAte => getField<DateTime>('ativo_ate');
   set ativoAte(DateTime? value) => setField<DateTime>('ativo_ate', value);
+
+  DateTime? get deletedAt => getField<DateTime>('deleted_at');
+  set deletedAt(DateTime? value) => setField<DateTime>('deleted_at', value);
 }

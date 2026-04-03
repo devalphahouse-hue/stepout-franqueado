@@ -8,6 +8,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import '/flutter_flow/upload_data.dart';
 import 'dart:ui';
+import '/index.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -210,20 +211,133 @@ class _DetalhesProfessorWidgetState extends State<DetalhesProfessorWidget> {
                                                       .fontStyle,
                                             ),
                                       ),
-                                      InkWell(
-                                        splashColor: Colors.transparent,
-                                        focusColor: Colors.transparent,
-                                        hoverColor: Colors.transparent,
-                                        highlightColor: Colors.transparent,
-                                        onTap: () async {
-                                          context.safePop();
-                                        },
-                                        child: Icon(
-                                          Icons.undo,
-                                          color: FlutterFlowTheme.of(context)
-                                              .primaryText,
-                                          size: 24.0,
-                                        ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          InkWell(
+                                            splashColor: Colors.transparent,
+                                            focusColor: Colors.transparent,
+                                            hoverColor: Colors.transparent,
+                                            highlightColor: Colors.transparent,
+                                            onTap: () async {
+                                              var confirmDialogResponse =
+                                                  await showDialog<bool>(
+                                                context: context,
+                                                builder: (alertDialogContext) {
+                                                  return WebViewAware(
+                                                    child: AlertDialog(
+                                                      title: Text(
+                                                          'Tem certeza que deseja excluir este professor?'),
+                                                      content: Text(
+                                                          'O registro será desativado.'),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  alertDialogContext,
+                                                                  false),
+                                                          child:
+                                                              Text('Cancelar'),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  alertDialogContext,
+                                                                  true),
+                                                          child:
+                                                              Text('Excluir'),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                              );
+                                              if (confirmDialogResponse ?? false) {
+                                                // Verificar turmas ativas vinculadas
+                                                final turmasAtivas = await TurmasTable().queryRows(
+                                                  queryFn: (q) => q
+                                                      .eqOrNull('professor_responsavel', widget!.profId)
+                                                      .eqOrNull('deleted_at', null),
+                                                );
+                                                if (turmasAtivas.isNotEmpty) {
+                                                  final confirmarVinculo = await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (alertDialogContext) {
+                                                      return WebViewAware(
+                                                        child: AlertDialog(
+                                                          title: Text('Atenção'),
+                                                          content: Text(
+                                                              'Este professor possui ${turmasAtivas.length} turma(s) ativa(s). Ao excluir, ele será desvinculado dessas turmas.'),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(alertDialogContext, false),
+                                                              child: Text('Cancelar'),
+                                                            ),
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(alertDialogContext, true),
+                                                              child: Text('Confirmar'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    },
+                                                  );
+                                                  if (!(confirmarVinculo ?? false)) return;
+                                                  // Desvincular professor das turmas
+                                                  for (final turma in turmasAtivas) {
+                                                    await TurmasTable().update(
+                                                      data: {'professor_responsavel': null},
+                                                      matchingRows: (rows) => rows.eqOrNull('id', turma.id),
+                                                    );
+                                                  }
+                                                }
+                                                final now = DateTime.now().toUtc().toIso8601String();
+                                                await MetaProfessorTable().update(
+                                                  data: {'deleted_at': now},
+                                                  matchingRows: (rows) =>
+                                                      rows.eqOrNull(
+                                                    'user_id',
+                                                    widget!.profId,
+                                                  ),
+                                                );
+                                                await UsersTable().update(
+                                                  data: {'deleted_at': now},
+                                                  matchingRows: (rows) =>
+                                                      rows.eqOrNull(
+                                                    'id',
+                                                    widget!.profId,
+                                                  ),
+                                                );
+                                                context.goNamed(
+                                                    ListaProfessoresWidget.routeName);
+                                              }
+                                            },
+                                            child: Icon(
+                                              Icons.delete_outline,
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .error,
+                                              size: 24.0,
+                                            ),
+                                          ),
+                                          SizedBox(width: 16.0),
+                                          InkWell(
+                                            splashColor: Colors.transparent,
+                                            focusColor: Colors.transparent,
+                                            hoverColor: Colors.transparent,
+                                            highlightColor: Colors.transparent,
+                                            onTap: () async {
+                                              context.safePop();
+                                            },
+                                            child: Icon(
+                                              Icons.undo,
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .primaryText,
+                                              size: 24.0,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),

@@ -149,7 +149,7 @@ class _ReagendarAulaWidgetState extends State<ReagendarAulaWidget> {
                 Align(
                   alignment: AlignmentDirectional(0.0, 0.0),
                   child: Text(
-                    'Clique nos calendários e escolha o dia e horário dessa aula',
+                    'Escolha a data e os horários de início e fim da aula',
                     style: FlutterFlowTheme.of(context).titleSmall.override(
                           font: GoogleFonts.interTight(
                             fontWeight: FontWeight.normal,
@@ -164,16 +164,17 @@ class _ReagendarAulaWidgetState extends State<ReagendarAulaWidget> {
                         ),
                   ),
                 ),
+                // Data do reagendamento
                 Row(
                   mainAxisSize: MainAxisSize.max,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Início: ${dateTimeFormat(
-                        "d/M H:mm",
-                        _model.datePicked1,
-                        locale: FFLocalizations.of(context).languageCode,
-                      )}',
+                      'Data: ${_model.selectedDate != null ? dateTimeFormat(
+                          "dd/MM/yyyy",
+                          _model.selectedDate,
+                          locale: FFLocalizations.of(context).languageCode,
+                        ) : "Selecione"}',
                       style: FlutterFlowTheme.of(context).bodyMedium.override(
                             font: GoogleFonts.inter(
                               fontWeight: FlutterFlowTheme.of(context)
@@ -198,7 +199,7 @@ class _ReagendarAulaWidgetState extends State<ReagendarAulaWidget> {
                       hoverColor: Colors.transparent,
                       highlightColor: Colors.transparent,
                       onTap: () async {
-                        final _datePicked1Date = await showDatePicker(
+                        final pickedDate = await showDatePicker(
                           context: context,
                           barrierDismissible: false,
                           initialDate: getCurrentTimestamp,
@@ -243,69 +244,9 @@ class _ReagendarAulaWidgetState extends State<ReagendarAulaWidget> {
                             );
                           },
                         );
-
-                        TimeOfDay? _datePicked1Time;
-                        if (_datePicked1Date != null) {
-                          _datePicked1Time = await showTimePicker(
-                            context: context,
-                            barrierDismissible: false,
-                            initialTime:
-                                TimeOfDay.fromDateTime(getCurrentTimestamp),
-                            builder: (context, child) {
-                              return wrapInMaterialTimePickerTheme(
-                                context,
-                                child!,
-                                headerBackgroundColor:
-                                    FlutterFlowTheme.of(context).primary,
-                                headerForegroundColor:
-                                    FlutterFlowTheme.of(context).info,
-                                headerTextStyle: FlutterFlowTheme.of(context)
-                                    .headlineLarge
-                                    .override(
-                                      font: GoogleFonts.interTight(
-                                        fontWeight: FontWeight.w600,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .headlineLarge
-                                            .fontStyle,
-                                      ),
-                                      fontSize: 32.0,
-                                      letterSpacing: 0.0,
-                                      fontWeight: FontWeight.w600,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .headlineLarge
-                                          .fontStyle,
-                                    ),
-                                pickerBackgroundColor:
-                                    FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                pickerForegroundColor:
-                                    FlutterFlowTheme.of(context).primaryText,
-                                selectedDateTimeBackgroundColor:
-                                    FlutterFlowTheme.of(context).primary,
-                                selectedDateTimeForegroundColor:
-                                    FlutterFlowTheme.of(context).info,
-                                actionButtonForegroundColor:
-                                    FlutterFlowTheme.of(context).primaryText,
-                                iconSize: 24.0,
-                              );
-                            },
-                          );
-                        }
-
-                        if (_datePicked1Date != null &&
-                            _datePicked1Time != null) {
+                        if (pickedDate != null) {
                           safeSetState(() {
-                            _model.datePicked1 = DateTime(
-                              _datePicked1Date.year,
-                              _datePicked1Date.month,
-                              _datePicked1Date.day,
-                              _datePicked1Time!.hour,
-                              _datePicked1Time.minute,
-                            );
-                          });
-                        } else if (_model.datePicked1 != null) {
-                          safeSetState(() {
-                            _model.datePicked1 = getCurrentTimestamp;
+                            _model.selectedDate = pickedDate;
                           });
                         }
                       },
@@ -315,165 +256,177 @@ class _ReagendarAulaWidgetState extends State<ReagendarAulaWidget> {
                         size: 24.0,
                       ),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Text(
-                          'Fim: ${dateTimeFormat(
-                            "d/M H:mm",
-                            _model.datePicked2,
-                            locale: FFLocalizations.of(context).languageCode,
-                          )}',
-                          style:
-                              FlutterFlowTheme.of(context).bodyMedium.override(
-                                    font: GoogleFonts.inter(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .fontWeight,
+                  ].divide(SizedBox(width: 10.0)),
+                ),
+                // Hora Início e Hora Fim
+                Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Início: ${_model.selectedTimeInicio != null ? _model.selectedTimeInicio!.format(context) : "Selecione"}',
+                      style: FlutterFlowTheme.of(context).bodyMedium.override(
+                            font: GoogleFonts.inter(
+                              fontWeight: FlutterFlowTheme.of(context)
+                                  .bodyMedium
+                                  .fontWeight,
+                              fontStyle: FlutterFlowTheme.of(context)
+                                  .bodyMedium
+                                  .fontStyle,
+                            ),
+                            letterSpacing: 0.0,
+                            fontWeight: FlutterFlowTheme.of(context)
+                                .bodyMedium
+                                .fontWeight,
+                            fontStyle: FlutterFlowTheme.of(context)
+                                .bodyMedium
+                                .fontStyle,
+                          ),
+                    ),
+                    InkWell(
+                      splashColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      onTap: () async {
+                        final pickedTime = await showTimePicker(
+                          context: context,
+                          barrierDismissible: false,
+                          initialTime:
+                              TimeOfDay.fromDateTime(getCurrentTimestamp),
+                          builder: (context, child) {
+                            return wrapInMaterialTimePickerTheme(
+                              context,
+                              child!,
+                              headerBackgroundColor:
+                                  FlutterFlowTheme.of(context).primary,
+                              headerForegroundColor:
+                                  FlutterFlowTheme.of(context).info,
+                              headerTextStyle: FlutterFlowTheme.of(context)
+                                  .headlineLarge
+                                  .override(
+                                    font: GoogleFonts.interTight(
+                                      fontWeight: FontWeight.w600,
                                       fontStyle: FlutterFlowTheme.of(context)
-                                          .bodyMedium
+                                          .headlineLarge
                                           .fontStyle,
                                     ),
+                                    fontSize: 32.0,
                                     letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontWeight,
+                                    fontWeight: FontWeight.w600,
                                     fontStyle: FlutterFlowTheme.of(context)
-                                        .bodyMedium
+                                        .headlineLarge
                                         .fontStyle,
                                   ),
-                        ),
-                        InkWell(
-                          splashColor: Colors.transparent,
-                          focusColor: Colors.transparent,
-                          hoverColor: Colors.transparent,
-                          highlightColor: Colors.transparent,
-                          onTap: () async {
-                            final _datePicked2Date = await showDatePicker(
-                              context: context,
-                              barrierDismissible: false,
-                              initialDate: getCurrentTimestamp,
-                              firstDate:
-                                  (getCurrentTimestamp ?? DateTime(1900)),
-                              lastDate: DateTime(2050),
-                              builder: (context, child) {
-                                return wrapInMaterialDatePickerTheme(
-                                  context,
-                                  child!,
-                                  headerBackgroundColor:
-                                      FlutterFlowTheme.of(context).primary,
-                                  headerForegroundColor:
-                                      FlutterFlowTheme.of(context).info,
-                                  headerTextStyle: FlutterFlowTheme.of(context)
-                                      .headlineLarge
-                                      .override(
-                                        font: GoogleFonts.interTight(
-                                          fontWeight: FontWeight.w600,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .headlineLarge
-                                                  .fontStyle,
-                                        ),
-                                        fontSize: 32.0,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FontWeight.w600,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .headlineLarge
-                                            .fontStyle,
-                                      ),
-                                  pickerBackgroundColor:
-                                      FlutterFlowTheme.of(context)
-                                          .secondaryBackground,
-                                  pickerForegroundColor:
-                                      FlutterFlowTheme.of(context).primaryText,
-                                  selectedDateTimeBackgroundColor:
-                                      FlutterFlowTheme.of(context).primary,
-                                  selectedDateTimeForegroundColor:
-                                      FlutterFlowTheme.of(context).info,
-                                  actionButtonForegroundColor:
-                                      FlutterFlowTheme.of(context).primaryText,
-                                  iconSize: 24.0,
-                                );
-                              },
+                              pickerBackgroundColor:
+                                  FlutterFlowTheme.of(context)
+                                      .secondaryBackground,
+                              pickerForegroundColor:
+                                  FlutterFlowTheme.of(context).primaryText,
+                              selectedDateTimeBackgroundColor:
+                                  FlutterFlowTheme.of(context).primary,
+                              selectedDateTimeForegroundColor:
+                                  FlutterFlowTheme.of(context).info,
+                              actionButtonForegroundColor:
+                                  FlutterFlowTheme.of(context).primaryText,
+                              iconSize: 24.0,
                             );
-
-                            TimeOfDay? _datePicked2Time;
-                            if (_datePicked2Date != null) {
-                              _datePicked2Time = await showTimePicker(
-                                context: context,
-                                barrierDismissible: false,
-                                initialTime:
-                                    TimeOfDay.fromDateTime(getCurrentTimestamp),
-                                builder: (context, child) {
-                                  return wrapInMaterialTimePickerTheme(
-                                    context,
-                                    child!,
-                                    headerBackgroundColor:
-                                        FlutterFlowTheme.of(context).primary,
-                                    headerForegroundColor:
-                                        FlutterFlowTheme.of(context).info,
-                                    headerTextStyle:
-                                        FlutterFlowTheme.of(context)
-                                            .headlineLarge
-                                            .override(
-                                              font: GoogleFonts.interTight(
-                                                fontWeight: FontWeight.w600,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .headlineLarge
-                                                        .fontStyle,
-                                              ),
-                                              fontSize: 32.0,
-                                              letterSpacing: 0.0,
-                                              fontWeight: FontWeight.w600,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .headlineLarge
-                                                      .fontStyle,
-                                            ),
-                                    pickerBackgroundColor:
-                                        FlutterFlowTheme.of(context)
-                                            .secondaryBackground,
-                                    pickerForegroundColor:
-                                        FlutterFlowTheme.of(context)
-                                            .primaryText,
-                                    selectedDateTimeBackgroundColor:
-                                        FlutterFlowTheme.of(context).primary,
-                                    selectedDateTimeForegroundColor:
-                                        FlutterFlowTheme.of(context).info,
-                                    actionButtonForegroundColor:
-                                        FlutterFlowTheme.of(context)
-                                            .primaryText,
-                                    iconSize: 24.0,
-                                  );
-                                },
-                              );
-                            }
-
-                            if (_datePicked2Date != null &&
-                                _datePicked2Time != null) {
-                              safeSetState(() {
-                                _model.datePicked2 = DateTime(
-                                  _datePicked2Date.year,
-                                  _datePicked2Date.month,
-                                  _datePicked2Date.day,
-                                  _datePicked2Time!.hour,
-                                  _datePicked2Time.minute,
-                                );
-                              });
-                            } else if (_model.datePicked2 != null) {
-                              safeSetState(() {
-                                _model.datePicked2 = getCurrentTimestamp;
-                              });
-                            }
                           },
-                          child: Icon(
-                            Icons.calendar_month,
-                            color: FlutterFlowTheme.of(context).primaryText,
-                            size: 24.0,
+                        );
+                        if (pickedTime != null) {
+                          safeSetState(() {
+                            _model.selectedTimeInicio = pickedTime;
+                          });
+                        }
+                      },
+                      child: Icon(
+                        Icons.access_time,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                        size: 24.0,
+                      ),
+                    ),
+                    SizedBox(width: 20.0),
+                    Text(
+                      'Fim: ${_model.selectedTimeFim != null ? _model.selectedTimeFim!.format(context) : "Selecione"}',
+                      style: FlutterFlowTheme.of(context).bodyMedium.override(
+                            font: GoogleFonts.inter(
+                              fontWeight: FlutterFlowTheme.of(context)
+                                  .bodyMedium
+                                  .fontWeight,
+                              fontStyle: FlutterFlowTheme.of(context)
+                                  .bodyMedium
+                                  .fontStyle,
+                            ),
+                            letterSpacing: 0.0,
+                            fontWeight: FlutterFlowTheme.of(context)
+                                .bodyMedium
+                                .fontWeight,
+                            fontStyle: FlutterFlowTheme.of(context)
+                                .bodyMedium
+                                .fontStyle,
                           ),
-                        ),
-                      ].divide(SizedBox(width: 10.0)),
+                    ),
+                    InkWell(
+                      splashColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      onTap: () async {
+                        final pickedTime = await showTimePicker(
+                          context: context,
+                          barrierDismissible: false,
+                          initialTime:
+                              TimeOfDay.fromDateTime(getCurrentTimestamp),
+                          builder: (context, child) {
+                            return wrapInMaterialTimePickerTheme(
+                              context,
+                              child!,
+                              headerBackgroundColor:
+                                  FlutterFlowTheme.of(context).primary,
+                              headerForegroundColor:
+                                  FlutterFlowTheme.of(context).info,
+                              headerTextStyle: FlutterFlowTheme.of(context)
+                                  .headlineLarge
+                                  .override(
+                                    font: GoogleFonts.interTight(
+                                      fontWeight: FontWeight.w600,
+                                      fontStyle: FlutterFlowTheme.of(context)
+                                          .headlineLarge
+                                          .fontStyle,
+                                    ),
+                                    fontSize: 32.0,
+                                    letterSpacing: 0.0,
+                                    fontWeight: FontWeight.w600,
+                                    fontStyle: FlutterFlowTheme.of(context)
+                                        .headlineLarge
+                                        .fontStyle,
+                                  ),
+                              pickerBackgroundColor:
+                                  FlutterFlowTheme.of(context)
+                                      .secondaryBackground,
+                              pickerForegroundColor:
+                                  FlutterFlowTheme.of(context).primaryText,
+                              selectedDateTimeBackgroundColor:
+                                  FlutterFlowTheme.of(context).primary,
+                              selectedDateTimeForegroundColor:
+                                  FlutterFlowTheme.of(context).info,
+                              actionButtonForegroundColor:
+                                  FlutterFlowTheme.of(context).primaryText,
+                              iconSize: 24.0,
+                            );
+                          },
+                        );
+                        if (pickedTime != null) {
+                          safeSetState(() {
+                            _model.selectedTimeFim = pickedTime;
+                          });
+                        }
+                      },
+                      child: Icon(
+                        Icons.access_time,
+                        color: FlutterFlowTheme.of(context).primaryText,
+                        size: 24.0,
+                      ),
                     ),
                   ].divide(SizedBox(width: 10.0)),
                 ),
@@ -481,8 +434,8 @@ class _ReagendarAulaWidgetState extends State<ReagendarAulaWidget> {
                   alignment: AlignmentDirectional(0.0, 0.0),
                   child: FFButtonWidget(
                     onPressed: () async {
-                      if ((_model.datePicked1 != null) &&
-                          (_model.datePicked2 != null)) {
+                      if (_model.isFormComplete) {
+                        _model.combineDateTime();
                         await AulasTable().update(
                           data: {
                             'datetimeinicio_aula': supaSerialize<DateTime>(
@@ -509,7 +462,7 @@ class _ReagendarAulaWidgetState extends State<ReagendarAulaWidget> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Preencha os horários',
+                              'Preencha a data e os horários',
                               style: TextStyle(
                                 color: FlutterFlowTheme.of(context)
                                     .primaryBackground,

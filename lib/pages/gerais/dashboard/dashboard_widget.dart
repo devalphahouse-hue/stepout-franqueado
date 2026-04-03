@@ -212,15 +212,15 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                       children: [
                                                         // CORREÇÃO 1: usar API get_students_by_franquia (mesma da página de Alunos)
                                                         FutureBuilder<
-                                                            ApiCallResponse>(
-                                                          future: SupabaseGroup
-                                                              .listaAlunosCall
-                                                              .call(
-                                                            pFranquiaId:
-                                                                FFAppState()
-                                                                    .idfranquia,
-                                                            token:
-                                                                currentJwtToken,
+                                                            List<
+                                                                MetaAlunosRow>>(
+                                                          future:
+                                                              MetaAlunosTable()
+                                                                  .queryRows(
+                                                            queryFn: (q) => q.eqOrNull(
+                                                              'franquia_id',
+                                                              FFAppState().idfranquia,
+                                                            ),
                                                           ),
                                                           builder: (context,
                                                               snapshot) {
@@ -397,15 +397,15 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                                       children: [
                                                         // CORREÇÃO 2: usar API list_professores_json (mesma da página de Professores)
                                                         FutureBuilder<
-                                                            ApiCallResponse>(
-                                                          future: SupabaseGroup
-                                                              .listaProfessoresCall
-                                                              .call(
-                                                            pIdFranquia:
-                                                                FFAppState()
-                                                                    .idfranquia,
-                                                            token:
-                                                                currentJwtToken,
+                                                            List<
+                                                                MetaProfessorRow>>(
+                                                          future:
+                                                              MetaProfessorTable()
+                                                                  .queryRows(
+                                                            queryFn: (q) => q.eqOrNull(
+                                                              'franquia',
+                                                              FFAppState().idfranquia,
+                                                            ),
                                                           ),
                                                           builder: (context,
                                                               snapshot) {
@@ -538,19 +538,10 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                               FutureBuilder<List<CobrancasRow>>(
                                             // CORREÇÃO 3: filtrar por franquia + status CONFIRMED + tipo aluno
                                             future: CobrancasTable().queryRows(
-                                              queryFn: (q) => q
-                                                  .eqOrNull(
-                                                    'if_franquia',
-                                                    FFAppState().idfranquia,
-                                                  )
-                                                  .eqOrNull(
-                                                    'status_cobranca',
-                                                    'CONFIRMED',
-                                                  )
-                                                  .eqOrNull(
-                                                    'tipo_cobranca',
-                                                    'aluno',
-                                                  ),
+                                              queryFn: (q) => q.eqOrNull(
+                                                'if_franquia',
+                                                FFAppState().idfranquia,
+                                              ),
                                             ),
                                             builder: (context, snapshot) {
                                               if (!snapshot.hasData) {

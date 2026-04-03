@@ -50,6 +50,63 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width < kBreakpointSmall) {
+      return Scaffold(
+        key: scaffoldKey,
+        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        body: SafeArea(
+          top: true,
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: Image.asset(
+                      'assets/images/Logo.png',
+                      width: 150.0,
+                      height: 150.0,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  SizedBox(height: 32.0),
+                  Text(
+                    'ESSE PAINEL FOI CONSTRUÍDO PARA SER VISUALIZADO APENAS PELO DESKTOP',
+                    textAlign: TextAlign.center,
+                    style: FlutterFlowTheme.of(context)
+                        .headlineSmall
+                        .override(
+                          font: GoogleFonts.interTight(
+                            fontWeight:
+                                FlutterFlowTheme.of(context)
+                                    .headlineSmall
+                                    .fontWeight,
+                            fontStyle:
+                                FlutterFlowTheme.of(context)
+                                    .headlineSmall
+                                    .fontStyle,
+                          ),
+                          letterSpacing: 0.0,
+                          fontWeight:
+                              FlutterFlowTheme.of(context)
+                                  .headlineSmall
+                                  .fontWeight,
+                          fontStyle:
+                              FlutterFlowTheme.of(context)
+                                  .headlineSmall
+                                  .fontStyle,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();

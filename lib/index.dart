@@ -46,3 +46,5 @@ export '/pages/gerais/cadastro_franquia/cadastro_franquia_widget.dart'
 export '/pages/gerais/checkout/checkout_widget.dart' show CheckoutWidget;
 export '/pages/aulas/calendario_aulas/calendario_aulas_widget.dart'
     show CalendarioAulasWidget;
+export '/pages/gerais/compra_confirmada/compra_confirmada_widget.dart'
+    show CompraConfirmadaWidget;

@@ -195,8 +195,16 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                         ),
                                                       ),
                                                       Expanded(
-                                                        child: Builder(
-                                                          builder: (context) {
+                                                        child: StreamBuilder<List<MensagensChatsRow>>(
+                                                          stream: SupaFlow
+                                                              .client
+                                                              .from('mensagens_chats')
+                                                              .stream(primaryKey: ['id'])
+                                                              .map((list) => list
+                                                                  .map((item) => MensagensChatsRow(item))
+                                                                  .toList()),
+                                                          builder: (context, msgSnapshot) {
+                                                            final allMessages = msgSnapshot.data ?? [];
                                                             final meusChats = (rowListaChatsAbertosResponse
                                                                         .jsonBody
                                                                         .toList()
@@ -214,6 +222,35 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                               );
                                                             }
 
+                                                            // Build unread counts and last message time per chat
+                                                            final Map<String, int> unreadCounts = {};
+                                                            final Map<String, DateTime> lastMessageTimes = {};
+                                                            for (final msg in allMessages) {
+                                                              final chatId = msg.chatId ?? '';
+                                                              if (chatId.isEmpty) continue;
+                                                              // Last message time
+                                                              final msgTime = msg.createdAt;
+                                                              if (!lastMessageTimes.containsKey(chatId) ||
+                                                                  msgTime.isAfter(lastMessageTimes[chatId]!)) {
+                                                                lastMessageTimes[chatId] = msgTime;
+                                                              }
+                                                              // Unread count
+                                                              if (msg.senderId != currentUserUid &&
+                                                                  msg.lida != true) {
+                                                                unreadCounts[chatId] = (unreadCounts[chatId] ?? 0) + 1;
+                                                              }
+                                                            }
+
+                                                            // Sort by last message time (most recent first)
+                                                            meusChats.sort((a, b) {
+                                                              final timeA = lastMessageTimes[a.chatId];
+                                                              final timeB = lastMessageTimes[b.chatId];
+                                                              if (timeA == null && timeB == null) return 0;
+                                                              if (timeA == null) return 1;
+                                                              if (timeB == null) return -1;
+                                                              return timeB.compareTo(timeA);
+                                                            });
+
                                                             return SingleChildScrollView(
                                                               child: Column(
                                                                 mainAxisSize:
@@ -226,6 +263,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                   final meusChatsItem =
                                                                       meusChats[
                                                                           meusChatsIndex];
+                                                                  final unreadCount = unreadCounts[meusChatsItem.chatId] ?? 0;
                                                                   return Align(
                                                                     alignment:
                                                                         AlignmentDirectional(
@@ -251,6 +289,15 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                             meusChatsItem.chatId;
                                                                         FFAppState()
                                                                             .update(() {});
+
+                                                                        // Marcar mensagens como lidas
+                                                                        await MensagensChatsTable().update(
+                                                                          data: {'lida': true},
+                                                                          matchingRows: (rows) => rows
+                                                                              .eqOrNull('chat_id', meusChatsItem.chatId)
+                                                                              .neq('sender_id', currentUserUid)
+                                                                              .neq('lida', true),
+                                                                        );
 
                                                                         context.pushNamed(
                                                                             ChatWidget.routeName);
@@ -305,21 +352,49 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                                     mainAxisSize: MainAxisSize.max,
                                                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                                                     children: [
-                                                                                      Text(
-                                                                                        valueOrDefault<String>(
-                                                                                          meusChatsItem.otherUser.nome,
-                                                                                          'Nome',
-                                                                                        ),
-                                                                                        style: FlutterFlowTheme.of(context).bodyMedium.override(
-                                                                                              font: GoogleFonts.inter(
-                                                                                                fontWeight: FontWeight.bold,
-                                                                                                fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                      Row(
+                                                                                        mainAxisSize: MainAxisSize.max,
+                                                                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                                        children: [
+                                                                                          Expanded(
+                                                                                            child: Text(
+                                                                                              valueOrDefault<String>(
+                                                                                                meusChatsItem.otherUser.nome,
+                                                                                                'Nome',
                                                                                               ),
-                                                                                              fontSize: 16.0,
-                                                                                              letterSpacing: 0.0,
-                                                                                              fontWeight: FontWeight.bold,
-                                                                                              fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                              style: FlutterFlowTheme.of(context).bodyMedium.override(
+                                                                                                    font: GoogleFonts.inter(
+                                                                                                      fontWeight: FontWeight.bold,
+                                                                                                      fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                                    ),
+                                                                                                    fontSize: 16.0,
+                                                                                                    letterSpacing: 0.0,
+                                                                                                    fontWeight: FontWeight.bold,
+                                                                                                    fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                                  ),
                                                                                             ),
+                                                                                          ),
+                                                                                          if (unreadCount > 0)
+                                                                                            Container(
+                                                                                              padding: EdgeInsets.all(6.0),
+                                                                                              decoration: BoxDecoration(
+                                                                                                color: FlutterFlowTheme.of(context).primary,
+                                                                                                shape: BoxShape.circle,
+                                                                                              ),
+                                                                                              child: Text(
+                                                                                                unreadCount.toString(),
+                                                                                                style: FlutterFlowTheme.of(context).bodySmall.override(
+                                                                                                      font: GoogleFonts.inter(
+                                                                                                        fontWeight: FontWeight.bold,
+                                                                                                      ),
+                                                                                                      color: Colors.white,
+                                                                                                      fontSize: 12.0,
+                                                                                                      letterSpacing: 0.0,
+                                                                                                      fontWeight: FontWeight.bold,
+                                                                                                    ),
+                                                                                              ),
+                                                                                            ),
+                                                                                        ],
                                                                                       ),
                                                                                       Text(
                                                                                         meusChatsItem.otherUser.role,

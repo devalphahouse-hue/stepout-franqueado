@@ -1,5 +1,6 @@
 import '/auth/supabase_auth/auth_util.dart';
 import '/backend/schema/structs/index.dart';
+import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -596,13 +597,57 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                               mainAxisSize: MainAxisSize.max,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.chat_rounded,
-                                  color: widget!.route == 'Chat'
-                                      ? FlutterFlowTheme.of(context).primary
-                                      : FlutterFlowTheme.of(context)
-                                          .secondaryText,
-                                  size: 22.0,
+                                StreamBuilder<List<MensagensChatsRow>>(
+                                  stream: SupaFlow.client
+                                      .from('mensagens_chats')
+                                      .stream(primaryKey: ['id'])
+                                      .map((list) => list
+                                          .where((item) =>
+                                              item['sender_id'] != currentUserUid &&
+                                              item['lida'] != true)
+                                          .map((item) => MensagensChatsRow(item))
+                                          .toList()),
+                                  builder: (context, snapshot) {
+                                    final unreadCount = snapshot.data?.length ?? 0;
+                                    return Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Icon(
+                                          Icons.chat_rounded,
+                                          color: widget!.route == 'Chat'
+                                              ? FlutterFlowTheme.of(context).primary
+                                              : FlutterFlowTheme.of(context)
+                                                  .secondaryText,
+                                          size: 22.0,
+                                        ),
+                                        if (unreadCount > 0)
+                                          Positioned(
+                                            right: -6,
+                                            top: -6,
+                                            child: Container(
+                                              padding: EdgeInsets.all(4.0),
+                                              decoration: BoxDecoration(
+                                                color: FlutterFlowTheme.of(context).error,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              constraints: BoxConstraints(
+                                                minWidth: 16.0,
+                                                minHeight: 16.0,
+                                              ),
+                                              child: Text(
+                                                unreadCount.toString(),
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    );
+                                  },
                                 ),
                                 Padding(
                                   padding: EdgeInsetsDirectional.fromSTEB(

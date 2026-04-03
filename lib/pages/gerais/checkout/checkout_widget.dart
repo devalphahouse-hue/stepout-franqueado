@@ -1199,7 +1199,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                   );
 
                                                                   context.pushNamed(
-                                                                      DashboardWidget
+                                                                      CompraConfirmadaWidget
                                                                           .routeName);
                                                                 } else {
                                                                   await showDialog(
@@ -1907,12 +1907,9 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                   MainAxisAlignment
                                                                       .spaceBetween,
                                                               children: [
-                                                                Flexible(
+                                                                Expanded(
                                                                   child:
                                                                       Container(
-                                                                    width: MediaQuery.sizeOf(context)
-                                                                            .width *
-                                                                        0.3,
                                                                     decoration:
                                                                         BoxDecoration(),
                                                                     child:
@@ -2004,7 +2001,9 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                               ),
                                                                               filled: true,
                                                                               fillColor: FlutterFlowTheme.of(context).secondaryBackground,
-                                                                              contentPadding: EdgeInsets.all(22.0),
+                                                                              contentPadding: EdgeInsets.all(
+                                                                                MediaQuery.sizeOf(context).width < kBreakpointSmall ? 14.0 : 22.0,
+                                                                              ),
                                                                             ),
                                                                             style: FlutterFlowTheme.of(context).bodyMedium.override(
                                                                                   font: GoogleFonts.inter(
@@ -2028,7 +2027,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                     ),
                                                                   ),
                                                                 ),
-                                                                Flexible(
+                                                                Expanded(
                                                                   child:
                                                                       Container(
                                                                     decoration:
@@ -2122,7 +2121,9 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                               ),
                                                                               filled: true,
                                                                               fillColor: FlutterFlowTheme.of(context).secondaryBackground,
-                                                                              contentPadding: EdgeInsets.all(22.0),
+                                                                              contentPadding: EdgeInsets.all(
+                                                                                MediaQuery.sizeOf(context).width < kBreakpointSmall ? 14.0 : 22.0,
+                                                                              ),
                                                                             ),
                                                                             style: FlutterFlowTheme.of(context).bodyMedium.override(
                                                                                   font: GoogleFonts.inter(
@@ -2146,7 +2147,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                     ),
                                                                   ),
                                                                 ),
-                                                                Flexible(
+                                                                Expanded(
                                                                   child:
                                                                       Container(
                                                                     decoration:
@@ -2237,7 +2238,9 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                               ),
                                                                               filled: true,
                                                                               fillColor: FlutterFlowTheme.of(context).secondaryBackground,
-                                                                              contentPadding: EdgeInsets.all(22.0),
+                                                                              contentPadding: EdgeInsets.all(
+                                                                                MediaQuery.sizeOf(context).width < kBreakpointSmall ? 14.0 : 22.0,
+                                                                              ),
                                                                             ),
                                                                             style: FlutterFlowTheme.of(context).bodyMedium.override(
                                                                                   font: GoogleFonts.inter(
@@ -2718,7 +2721,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                     () {});
 
                                                                 context.pushNamed(
-                                                                    DashboardWidget
+                                                                    CompraConfirmadaWidget
                                                                         .routeName);
                                                               } else {
                                                                 await showDialog(
@@ -3028,7 +3031,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                                                                     () {});
 
                                                                 context.pushNamed(
-                                                                    DashboardWidget
+                                                                    CompraConfirmadaWidget
                                                                         .routeName);
                                                               } else {
                                                                 await showDialog(

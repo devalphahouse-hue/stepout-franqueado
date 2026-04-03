@@ -401,7 +401,7 @@ class _ListaProfessoresWidgetState extends State<ListaProfessoresWidget> {
                                                           filled: true,
                                                           fillColor: FlutterFlowTheme
                                                                   .of(context)
-                                                              .secondaryBackground,
+                                                              .info,
                                                           prefixIcon: Icon(
                                                             Icons.search_sharp,
                                                           ),

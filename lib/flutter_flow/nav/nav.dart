@@ -337,6 +337,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: CalendarioAulasWidget.routePath,
           requireAuth: true,
           builder: (context, params) => CalendarioAulasWidget(),
+        ),
+        FFRoute(
+          name: CompraConfirmadaWidget.routeName,
+          path: CompraConfirmadaWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => CompraConfirmadaWidget(),
         )
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

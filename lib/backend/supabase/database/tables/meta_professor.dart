@@ -39,4 +39,7 @@ class MetaProfessorRow extends SupabaseDataRow {
       getListField<String>('turmas_do_professor');
   set turmasDoProfessor(List<String>? value) =>
       setListField<String>('turmas_do_professor', value);
+
+  DateTime? get deletedAt => getField<DateTime>('deleted_at');
+  set deletedAt(DateTime? value) => setField<DateTime>('deleted_at', value);
 }

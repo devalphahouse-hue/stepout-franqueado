@@ -1,6 +1,8 @@
 import '/auth/supabase_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
 import '/backend/schema/structs/index.dart';
+import '/backend/supabase/supabase.dart';
+import 'package:webviewx_plus/webviewx_plus.dart';
 import '/componentes/empty_list/empty_list_widget.dart';
 import '/componentes/sidebar/sidebar_widget.dart';
 import '/flutter_flow/flutter_flow_data_table.dart';
@@ -863,7 +865,56 @@ class _ListaTurmasWidgetState extends State<ListaTurmasWidget> {
                                                                       ),
                                                                 ),
                                                               ),
-                                                              Container(),
+                                                              InkWell(
+                                                                splashColor: Colors.transparent,
+                                                                focusColor: Colors.transparent,
+                                                                hoverColor: Colors.transparent,
+                                                                highlightColor: Colors.transparent,
+                                                                onTap: () async {
+                                                                  final alunosCount = turmasSemFiltroItem.totalAlunos ?? 0;
+                                                                  String mensagem = 'O registro será desativado.';
+                                                                  if (alunosCount > 0) {
+                                                                    mensagem = 'Esta turma possui $alunosCount aluno(s) vinculado(s). Ao excluir, os alunos serão desvinculados.';
+                                                                  }
+                                                                  var confirmDialogResponse = await showDialog<bool>(
+                                                                    context: context,
+                                                                    builder: (alertDialogContext) {
+                                                                      return WebViewAware(
+                                                                        child: AlertDialog(
+                                                                          title: Text('Tem certeza que deseja excluir esta turma?'),
+                                                                          content: Text(mensagem),
+                                                                          actions: [
+                                                                            TextButton(
+                                                                              onPressed: () => Navigator.pop(alertDialogContext, false),
+                                                                              child: Text('Cancelar'),
+                                                                            ),
+                                                                            TextButton(
+                                                                              onPressed: () => Navigator.pop(alertDialogContext, true),
+                                                                              child: Text('Excluir'),
+                                                                            ),
+                                                                          ],
+                                                                        ),
+                                                                      );
+                                                                    },
+                                                                  );
+                                                                  if (confirmDialogResponse ?? false) {
+                                                                    await TurmasTable().update(
+                                                                      data: {'deleted_at': DateTime.now().toUtc().toIso8601String()},
+                                                                      matchingRows: (rows) => rows.eqOrNull('id', turmasSemFiltroItem.id),
+                                                                    );
+                                                                    _model.clearListaTurmasCache();
+                                                                    safeSetState(() {
+                                                                      _model.apiRequestCompleted = false;
+                                                                    });
+                                                                    await _model.waitForApiRequestCompleted();
+                                                                  }
+                                                                },
+                                                                child: Icon(
+                                                                  Icons.delete_outline,
+                                                                  color: FlutterFlowTheme.of(context).error,
+                                                                  size: 24.0,
+                                                                ),
+                                                              ),
                                                               Align(
                                                                 alignment:
                                                                     AlignmentDirectional(

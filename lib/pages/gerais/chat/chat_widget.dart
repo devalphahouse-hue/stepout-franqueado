@@ -48,6 +48,25 @@ class _ChatWidgetState extends State<ChatWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Stream das mensagens do chat aberto, memoizado por chatId — evita
+  // que o StreamBuilder re-subscreva no Realtime a cada rebuild.
+  String? _streamChatId;
+  Stream<List<MensagensChatsRow>>? _msgStream;
+
+  Stream<List<MensagensChatsRow>>? _streamForChat(String chatId) {
+    if (chatId.isEmpty) return null;
+    if (_streamChatId != chatId) {
+      _streamChatId = chatId;
+      _msgStream = SupaFlow.client
+          .from('mensagens_chats')
+          .stream(primaryKey: ['id'])
+          .eqOrNull('chat_id', chatId)
+          .map((list) =>
+              list.map((item) => MensagensChatsRow(item)).toList());
+    }
+    return _msgStream;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +88,8 @@ class _ChatWidgetState extends State<ChatWidget> {
   @override
   Widget build(BuildContext context) {
     context.watch<FFAppState>();
+    final chatIdAtual =
+        GoRouterState.of(context).uri.queryParameters['chatId'] ?? '';
 
     return GestureDetector(
       onTap: () {
@@ -316,13 +337,15 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                               .transparent,
                                                                       onTap:
                                                                           () async {
-                                                                        FFAppState().chatId =
-                                                                            meusChatsItem.chatId;
-                                                                        FFAppState()
-                                                                            .update(() {});
-                                                                        safeSetState(() {});
+                                                                        // Atualiza a URL com ?chatId=...; o build reage via GoRouterState e troca o painel direito sem refresh.
+                                                                        context.goNamed(
+                                                                          ChatWidget.routeName,
+                                                                          queryParameters: {
+                                                                            'chatId': meusChatsItem.chatId ?? '',
+                                                                          },
+                                                                        );
 
-                                                                        // Marcar mensagens como lidas. Sem filtro de "lida=false" porque o filtro .neq('lida', true) não pega mensagens com lida=NULL (NULL <> true é NULL em SQL).
+                                                                        // Marca mensagens como lidas em background. Sem filtro de "lida=false" porque .neq('lida', true) não pega NULL (NULL <> true é NULL em SQL).
                                                                         await MensagensChatsTable().update(
                                                                           data: {'lida': true},
                                                                           matchingRows: (rows) => rows
@@ -681,9 +704,9 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,
                                                   children: [
-                                                    if (FFAppState().chatId !=
+                                                    if (chatIdAtual !=
                                                             null &&
-                                                        FFAppState().chatId !=
+                                                        chatIdAtual !=
                                                             '')
                                                       Padding(
                                                         padding:
@@ -714,15 +737,15 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                       .cover,
                                                                   image: Image
                                                                       .network(
-                                                                    (rowListaChatsAbertosResponse.jsonBody.toList().map<ChatAtivoStruct?>(ChatAtivoStruct.maybeFromMap).toList() as Iterable<ChatAtivoStruct?>).withoutNulls?.where((e) => e.chatId == FFAppState().chatId).toList()?.firstOrNull?.otherUser?.imagemPerfil !=
+                                                                    (rowListaChatsAbertosResponse.jsonBody.toList().map<ChatAtivoStruct?>(ChatAtivoStruct.maybeFromMap).toList() as Iterable<ChatAtivoStruct?>).withoutNulls?.where((e) => e.chatId == chatIdAtual).toList()?.firstOrNull?.otherUser?.imagemPerfil !=
                                                                                 null &&
-                                                                            (rowListaChatsAbertosResponse.jsonBody.toList().map<ChatAtivoStruct?>(ChatAtivoStruct.maybeFromMap).toList() as Iterable<ChatAtivoStruct?>).withoutNulls?.where((e) => e.chatId == FFAppState().chatId).toList()?.firstOrNull?.otherUser?.imagemPerfil !=
+                                                                            (rowListaChatsAbertosResponse.jsonBody.toList().map<ChatAtivoStruct?>(ChatAtivoStruct.maybeFromMap).toList() as Iterable<ChatAtivoStruct?>).withoutNulls?.where((e) => e.chatId == chatIdAtual).toList()?.firstOrNull?.otherUser?.imagemPerfil !=
                                                                                 ''
                                                                         ? (rowListaChatsAbertosResponse.jsonBody.toList().map<ChatAtivoStruct?>(ChatAtivoStruct.maybeFromMap).toList() as Iterable<ChatAtivoStruct?>)
                                                                             .withoutNulls
                                                                             .where((e) =>
                                                                                 e.chatId ==
-                                                                                FFAppState().chatId)
+                                                                                chatIdAtual)
                                                                             .toList()
                                                                             .firstOrNull!
                                                                             .otherUser
@@ -752,7 +775,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                               .map<ChatAtivoStruct?>(ChatAtivoStruct.maybeFromMap)
                                                                               .toList() as Iterable<ChatAtivoStruct?>)
                                                                           .withoutNulls
-                                                                          ?.where((e) => e.chatId == FFAppState().chatId)
+                                                                          ?.where((e) => e.chatId == chatIdAtual)
                                                                           .toList()
                                                                           ?.firstOrNull
                                                                           ?.otherUser
@@ -790,7 +813,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                               .map<ChatAtivoStruct?>(ChatAtivoStruct.maybeFromMap)
                                                                               .toList() as Iterable<ChatAtivoStruct?>)
                                                                           .withoutNulls
-                                                                          ?.where((e) => e.chatId == FFAppState().chatId)
+                                                                          ?.where((e) => e.chatId == chatIdAtual)
                                                                           .toList()
                                                                           ?.firstOrNull
                                                                           ?.otherUser
@@ -830,7 +853,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                           null &&
                                                                       (rowListaChatsAbertosResponse.jsonBody.toList().map<ChatAtivoStruct?>(ChatAtivoStruct.maybeFromMap).toList() as Iterable<ChatAtivoStruct?>)
                                                                               .withoutNulls
-                                                                              ?.where((e) => e.chatId == FFAppState().chatId)
+                                                                              ?.where((e) => e.chatId == chatIdAtual)
                                                                               .toList()
                                                                               ?.firstOrNull
                                                                               ?.turma !=
@@ -842,7 +865,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                             .withoutNulls
                                                                             ?.where((e) =>
                                                                                 e.chatId ==
-                                                                                FFAppState().chatId)
+                                                                                chatIdAtual)
                                                                             .toList()
                                                                             ?.firstOrNull
                                                                             ?.turma,
@@ -874,9 +897,9 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                               width: 12.0)),
                                                         ),
                                                       ),
-                                                    if (FFAppState().chatId !=
+                                                    if (chatIdAtual !=
                                                             null &&
-                                                        FFAppState().chatId !=
+                                                        chatIdAtual !=
                                                             '')
                                                       Expanded(
                                                         child: Padding(
@@ -886,24 +909,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                           child: StreamBuilder<
                                                               List<
                                                                   MensagensChatsRow>>(
-                                                            stream: _model.columnSupabaseStream ??= SupaFlow
-                                                                .client
-                                                                .from(
-                                                                    "mensagens_chats")
-                                                                .stream(
-                                                                    primaryKey: [
-                                                                      'id'
-                                                                    ])
-                                                                .eqOrNull(
-                                                                  'chat_id',
-                                                                  FFAppState()
-                                                                      .chatId,
-                                                                )
-                                                                .map((list) => list
-                                                                    .map((item) =>
-                                                                        MensagensChatsRow(
-                                                                            item))
-                                                                    .toList()),
+                                                            stream: _streamForChat(chatIdAtual),
                                                             builder: (context,
                                                                 snapshot) {
                                                               // Customize what your widget looks like when it's loading.
@@ -1115,9 +1121,9 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                           ),
                                                         ),
                                                       ),
-                                                    if (FFAppState().chatId !=
+                                                    if (chatIdAtual !=
                                                             null &&
-                                                        FFAppState().chatId !=
+                                                        chatIdAtual !=
                                                             '')
                                                       Row(
                                                         mainAxisSize:

@@ -304,13 +304,12 @@ class _NovaConversaWidgetState extends State<NovaConversaWidget> {
                                                             r'''$.id''',
                                                           ).toString(),
                                                         });
-                                                        FFAppState().chatId =
-                                                            _model
-                                                                .criarchat!.id;
-                                                        safeSetState(() {});
-
                                                         context.goNamed(
                                                           ChatWidget.routeName,
+                                                          queryParameters: {
+                                                            'chatId': _model
+                                                                .criarchat!.id,
+                                                          },
                                                           extra: <String,
                                                               dynamic>{
                                                             '__transition_info__':
@@ -327,18 +326,19 @@ class _NovaConversaWidgetState extends State<NovaConversaWidget> {
                                                           },
                                                         );
                                                       } else {
-                                                        FFAppState().chatId =
-                                                            SupabaseGroup
-                                                                .buscarChatCall
-                                                                .chatid(
-                                                          (_model.apiResultclt
-                                                                  ?.jsonBody ??
-                                                              ''),
-                                                        )!;
-                                                        safeSetState(() {});
-
                                                         context.goNamed(
                                                           ChatWidget.routeName,
+                                                          queryParameters: {
+                                                            'chatId':
+                                                                SupabaseGroup
+                                                                        .buscarChatCall
+                                                                        .chatid(
+                                                                      (_model.apiResultclt
+                                                                              ?.jsonBody ??
+                                                                          ''),
+                                                                    ) ??
+                                                                    '',
+                                                          },
                                                           extra: <String,
                                                               dynamic>{
                                                             '__transition_info__':

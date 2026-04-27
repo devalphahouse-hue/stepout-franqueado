@@ -306,18 +306,15 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                             meusChatsItem.chatId;
                                                                         FFAppState()
                                                                             .update(() {});
+                                                                        safeSetState(() {});
 
-                                                                        // Marcar mensagens como lidas
+                                                                        // Marcar mensagens como lidas. Sem filtro de "lida=false" porque o filtro .neq('lida', true) não pega mensagens com lida=NULL (NULL <> true é NULL em SQL).
                                                                         await MensagensChatsTable().update(
                                                                           data: {'lida': true},
                                                                           matchingRows: (rows) => rows
                                                                               .eqOrNull('chat_id', meusChatsItem.chatId)
-                                                                              .neq('sender_id', currentUserUid)
-                                                                              .neq('lida', true),
+                                                                              .neq('sender_id', currentUserUid),
                                                                         );
-
-                                                                        context.pushNamed(
-                                                                            ChatWidget.routeName);
                                                                       },
                                                                       child:
                                                                           Material(

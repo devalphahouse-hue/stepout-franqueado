@@ -202,12 +202,6 @@ class FFAppState extends ChangeNotifier {
     prefs.setString('ff_linkconteudo', value);
   }
 
-  String _chatId = '';
-  String get chatId => _chatId;
-  set chatId(String value) {
-    _chatId = value;
-  }
-
   ContratacaoFranqueadoStruct _contratacaoFranquado =
       ContratacaoFranqueadoStruct();
   ContratacaoFranqueadoStruct get contratacaoFranquado => _contratacaoFranquado;

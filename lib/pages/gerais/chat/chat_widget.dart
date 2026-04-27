@@ -481,7 +481,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                                       if (meusChatsItem.turma != null && meusChatsItem.turma != '')
                                                                                         Text(
                                                                                           valueOrDefault<String>(
-                                                                                            meusChatsItem.turma,
+                                                                                            meusChatsItem.turma?.replaceAll(RegExp(r'\s*/\s*$'), '').trim(),
                                                                                             'Turma',
                                                                                           ),
                                                                                           style: FlutterFlowTheme.of(context).bodyMedium.override(
@@ -845,8 +845,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                               .withoutNulls
                                                                               ?.where((e) =>
                                                                                   e.chatId ==
-                                                                                  FFAppState()
-                                                                                      .chatId)
+                                                                                  chatIdAtual)
                                                                               .toList()
                                                                               ?.firstOrNull
                                                                               ?.turma !=
@@ -868,7 +867,9 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                                 chatIdAtual)
                                                                             .toList()
                                                                             ?.firstOrNull
-                                                                            ?.turma,
+                                                                            ?.turma
+                                                                            ?.replaceAll(RegExp(r'\s*/\s*$'), '')
+                                                                            .trim(),
                                                                         'turma',
                                                                       ),
                                                                       style: FlutterFlowTheme.of(
@@ -1166,8 +1167,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                     'sender_id':
                                                                         currentUserUid,
                                                                     'chat_id':
-                                                                        FFAppState()
-                                                                            .chatId,
+                                                                        chatIdAtual,
                                                                     'conteudo': _model
                                                                         .tfMobileTextController
                                                                         .text,
@@ -1374,8 +1374,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                       'sender_id':
                                                                           currentUserUid,
                                                                       'chat_id':
-                                                                          FFAppState()
-                                                                              .chatId,
+                                                                          chatIdAtual,
                                                                       'conteudo': _model
                                                                           .tfMobileTextController
                                                                           .text,

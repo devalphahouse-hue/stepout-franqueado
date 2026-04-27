@@ -195,17 +195,10 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                         ),
                                                       ),
                                                       Expanded(
-                                                        child: StreamBuilder<List<MensagensChatsRow>>(
-                                                          stream: SupaFlow
-                                                              .client
-                                                              .from('mensagens_chats')
-                                                              .stream(primaryKey: ['id'])
-                                                              .map((list) => list
-                                                                  .map((item) => MensagensChatsRow(item))
-                                                                  .toList()),
-                                                          builder: (context, msgSnapshot) {
-                                                            final allMessages = msgSnapshot.data ?? [];
-                                                            final meusChats = (rowListaChatsAbertosResponse
+                                                        child: Builder(
+                                                          builder: (context) {
+                                                            // Lista de chats vinda do RPC (pode ter duplicatas: aluno em N turmas vira N linhas no LEFT JOIN)
+                                                            final meusChatsRaw = (rowListaChatsAbertosResponse
                                                                         .jsonBody
                                                                         .toList()
                                                                         .map<ChatAtivoStruct?>(
@@ -214,15 +207,39 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                     .withoutNulls
                                                                     ?.toList() ??
                                                                 [];
-                                                            if (meusChats
-                                                                .isEmpty) {
+
+                                                            final seenChatIds = <String>{};
+                                                            final meusChats = <ChatAtivoStruct>[];
+                                                            for (final c in meusChatsRaw) {
+                                                              final cid = c.chatId;
+                                                              if (cid != null && cid.isNotEmpty && seenChatIds.add(cid)) {
+                                                                meusChats.add(c);
+                                                              }
+                                                            }
+
+                                                            if (meusChats.isEmpty) {
                                                               return EmptyListWidget(
                                                                 texto:
                                                                     'Nenhum chat ativo',
                                                               );
                                                             }
 
-                                                            // Build unread counts and last message time per chat
+                                                            // RLS de mensagens_chats está aberta; o filtro abaixo evita receber mensagens de chats que não são deste usuário
+                                                            final chatIds = meusChats.map((c) => c.chatId!).toList();
+
+                                                            return StreamBuilder<List<MensagensChatsRow>>(
+                                                              stream: SupaFlow
+                                                                  .client
+                                                                  .from('mensagens_chats')
+                                                                  .stream(primaryKey: ['id'])
+                                                                  .inFilter('chat_id', chatIds)
+                                                                  .map((list) => list
+                                                                      .map((item) => MensagensChatsRow(item))
+                                                                      .toList()),
+                                                              builder: (context, msgSnapshot) {
+                                                                final allMessages = msgSnapshot.data ?? [];
+
+                                                                // Build unread counts and last message time per chat
                                                             final Map<String, int> unreadCounts = {};
                                                             final Map<String, DateTime> lastMessageTimes = {};
                                                             for (final msg in allMessages) {
@@ -447,6 +464,8 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                             12.0)),
                                                               ),
                                                             );
+                                                          },
+                                                        );
                                                           },
                                                         ),
                                                       ),

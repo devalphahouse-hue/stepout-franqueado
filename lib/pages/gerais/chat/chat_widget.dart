@@ -1079,6 +1079,41 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                             },
                                                           ),
                                                         ),
+                                                      )
+                                                    else
+                                                      Expanded(
+                                                        child: Center(
+                                                          child: Column(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                            children: [
+                                                              Icon(
+                                                                Icons.chat_bubble_outline,
+                                                                size: 64.0,
+                                                                color: FlutterFlowTheme.of(context).secondaryText,
+                                                              ),
+                                                              const SizedBox(height: 16.0),
+                                                              Text(
+                                                                'Selecione uma conversa',
+                                                                style: FlutterFlowTheme.of(context).headlineSmall.override(
+                                                                      font: GoogleFonts.interTight(),
+                                                                      color: FlutterFlowTheme.of(context).secondaryText,
+                                                                      letterSpacing: 0.0,
+                                                                    ),
+                                                              ),
+                                                              const SizedBox(height: 8.0),
+                                                              Text(
+                                                                'Escolha um chat na lista ao lado para começar.',
+                                                                textAlign: TextAlign.center,
+                                                                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                                                                      font: GoogleFonts.inter(),
+                                                                      color: FlutterFlowTheme.of(context).secondaryText,
+                                                                      letterSpacing: 0.0,
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
                                                       ),
                                                     if (FFAppState().chatId !=
                                                             null &&

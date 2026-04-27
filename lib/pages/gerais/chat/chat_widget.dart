@@ -20,6 +20,19 @@ import 'package:webviewx_plus/webviewx_plus.dart';
 import 'chat_model.dart';
 export 'chat_model.dart';
 
+String _formatarHoraMensagem(DateTime? dtRaw) {
+  if (dtRaw == null) return '';
+  final dt = dtRaw.toLocal();
+  final agora = DateTime.now();
+  final hoje = DateTime(agora.year, agora.month, agora.day);
+  final dia = DateTime(dt.year, dt.month, dt.day);
+  final hora = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  if (dia == hoje) return hora;
+  final ontem = hoje.subtract(const Duration(days: 1));
+  if (dia == ontem) return 'Ontem $hora';
+  return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} $hora';
+}
+
 class ChatWidget extends StatefulWidget {
   const ChatWidget({super.key});
 
@@ -281,6 +294,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                       meusChats[
                                                                           meusChatsIndex];
                                                                   final unreadCount = unreadCounts[meusChatsItem.chatId] ?? 0;
+                                                                  final lastMsgTime = lastMessageTimes[meusChatsItem.chatId];
                                                                   return Align(
                                                                     alignment:
                                                                         AlignmentDirectional(
@@ -388,26 +402,45 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                                                   ),
                                                                                             ),
                                                                                           ),
-                                                                                          if (unreadCount > 0)
-                                                                                            Container(
-                                                                                              padding: EdgeInsets.all(6.0),
-                                                                                              decoration: BoxDecoration(
-                                                                                                color: FlutterFlowTheme.of(context).primary,
-                                                                                                shape: BoxShape.circle,
-                                                                                              ),
-                                                                                              child: Text(
-                                                                                                unreadCount.toString(),
-                                                                                                style: FlutterFlowTheme.of(context).bodySmall.override(
-                                                                                                      font: GoogleFonts.inter(
-                                                                                                        fontWeight: FontWeight.bold,
+                                                                                          Column(
+                                                                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                                                                            mainAxisSize: MainAxisSize.min,
+                                                                                            children: [
+                                                                                              if (lastMsgTime != null)
+                                                                                                Text(
+                                                                                                  _formatarHoraMensagem(lastMsgTime),
+                                                                                                  style: FlutterFlowTheme.of(context).bodySmall.override(
+                                                                                                        font: GoogleFonts.inter(),
+                                                                                                        color: FlutterFlowTheme.of(context).secondaryText,
+                                                                                                        fontSize: 11.0,
+                                                                                                        letterSpacing: 0.0,
                                                                                                       ),
-                                                                                                      color: Colors.white,
-                                                                                                      fontSize: 12.0,
-                                                                                                      letterSpacing: 0.0,
-                                                                                                      fontWeight: FontWeight.bold,
+                                                                                                ),
+                                                                                              if (unreadCount > 0)
+                                                                                                Padding(
+                                                                                                  padding: const EdgeInsets.only(top: 4.0),
+                                                                                                  child: Container(
+                                                                                                    padding: EdgeInsets.all(6.0),
+                                                                                                    decoration: BoxDecoration(
+                                                                                                      color: FlutterFlowTheme.of(context).primary,
+                                                                                                      shape: BoxShape.circle,
                                                                                                     ),
-                                                                                              ),
-                                                                                            ),
+                                                                                                    child: Text(
+                                                                                                      unreadCount.toString(),
+                                                                                                      style: FlutterFlowTheme.of(context).bodySmall.override(
+                                                                                                            font: GoogleFonts.inter(
+                                                                                                              fontWeight: FontWeight.bold,
+                                                                                                            ),
+                                                                                                            color: Colors.white,
+                                                                                                            fontSize: 12.0,
+                                                                                                            letterSpacing: 0.0,
+                                                                                                            fontWeight: FontWeight.bold,
+                                                                                                          ),
+                                                                                                    ),
+                                                                                                  ),
+                                                                                                ),
+                                                                                            ],
+                                                                                          ),
                                                                                         ],
                                                                                       ),
                                                                                       Text(
@@ -939,21 +972,37 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                                   alignment: AlignmentDirectional(0.0, 0.0),
                                                                                   child: Padding(
                                                                                     padding: EdgeInsets.all(16.0),
-                                                                                    child: Text(
-                                                                                      valueOrDefault<String>(
-                                                                                        columnMensagensChatsRow.conteudo,
-                                                                                        'Mensagem',
-                                                                                      ),
-                                                                                      style: FlutterFlowTheme.of(context).bodyMedium.override(
-                                                                                            font: GoogleFonts.inter(
-                                                                                              fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                                                                                              fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                                                                                            ),
-                                                                                            color: FlutterFlowTheme.of(context).primaryBackground,
-                                                                                            letterSpacing: 0.0,
-                                                                                            fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                                                                                            fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                    child: Column(
+                                                                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                                                                      mainAxisSize: MainAxisSize.min,
+                                                                                      children: [
+                                                                                        Text(
+                                                                                          valueOrDefault<String>(
+                                                                                            columnMensagensChatsRow.conteudo,
+                                                                                            'Mensagem',
                                                                                           ),
+                                                                                          style: FlutterFlowTheme.of(context).bodyMedium.override(
+                                                                                                font: GoogleFonts.inter(
+                                                                                                  fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                                                                                                  fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                                ),
+                                                                                                color: FlutterFlowTheme.of(context).primaryBackground,
+                                                                                                letterSpacing: 0.0,
+                                                                                                fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                                                                                                fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                              ),
+                                                                                        ),
+                                                                                        const SizedBox(height: 4.0),
+                                                                                        Text(
+                                                                                          _formatarHoraMensagem(columnMensagensChatsRow.createdAt),
+                                                                                          style: FlutterFlowTheme.of(context).bodySmall.override(
+                                                                                                font: GoogleFonts.inter(),
+                                                                                                color: FlutterFlowTheme.of(context).primaryBackground.withOpacity(0.75),
+                                                                                                fontSize: 10.0,
+                                                                                                letterSpacing: 0.0,
+                                                                                              ),
+                                                                                        ),
+                                                                                      ],
                                                                                     ),
                                                                                   ),
                                                                                 ),
@@ -983,20 +1032,36 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                                   alignment: AlignmentDirectional(0.0, 0.0),
                                                                                   child: Padding(
                                                                                     padding: EdgeInsets.all(16.0),
-                                                                                    child: Text(
-                                                                                      valueOrDefault<String>(
-                                                                                        columnMensagensChatsRow.conteudo,
-                                                                                        'Mensagem',
-                                                                                      ),
-                                                                                      style: FlutterFlowTheme.of(context).bodyMedium.override(
-                                                                                            font: GoogleFonts.inter(
-                                                                                              fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                                                                                              fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                                                                                            ),
-                                                                                            letterSpacing: 0.0,
-                                                                                            fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                                                                                            fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                    child: Column(
+                                                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                      mainAxisSize: MainAxisSize.min,
+                                                                                      children: [
+                                                                                        Text(
+                                                                                          valueOrDefault<String>(
+                                                                                            columnMensagensChatsRow.conteudo,
+                                                                                            'Mensagem',
                                                                                           ),
+                                                                                          style: FlutterFlowTheme.of(context).bodyMedium.override(
+                                                                                                font: GoogleFonts.inter(
+                                                                                                  fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                                                                                                  fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                                ),
+                                                                                                letterSpacing: 0.0,
+                                                                                                fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                                                                                                fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                                                                              ),
+                                                                                        ),
+                                                                                        const SizedBox(height: 4.0),
+                                                                                        Text(
+                                                                                          _formatarHoraMensagem(columnMensagensChatsRow.createdAt),
+                                                                                          style: FlutterFlowTheme.of(context).bodySmall.override(
+                                                                                                font: GoogleFonts.inter(),
+                                                                                                color: FlutterFlowTheme.of(context).secondaryText,
+                                                                                                fontSize: 10.0,
+                                                                                                letterSpacing: 0.0,
+                                                                                              ),
+                                                                                        ),
+                                                                                      ],
                                                                                     ),
                                                                                   ),
                                                                                 ),

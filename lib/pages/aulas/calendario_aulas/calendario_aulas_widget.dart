@@ -171,108 +171,132 @@ class _Header extends StatelessWidget {
   final VoidCallback onNext;
   final VoidCallback onToday;
 
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 12.0,
-      runSpacing: 12.0,
+  Widget _titleBlock() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44.0,
-              height: 44.0,
-              decoration: BoxDecoration(
-                color: theme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              alignment: Alignment.center,
-              child: Icon(Icons.calendar_month_rounded,
-                  color: theme.primary, size: 22.0),
-            ),
-            const SizedBox(width: 14.0),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Calendário de Aulas',
-                  style: theme.headlineSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w800),
-                    fontWeight: FontWeight.w800,
-                    fontSize: isCompact ? 22.0 : 26.0,
-                    letterSpacing: -0.4,
-                    color: theme.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 2.0),
-                Text(
-                  'Acompanhe as próximas aulas programadas.',
-                  style: theme.bodyMedium.override(
-                    font: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13.0,
-                    color: theme.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const Spacer(),
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+          width: 44.0,
+          height: 44.0,
           decoration: BoxDecoration(
-            color: theme.primaryBackground,
+            color: theme.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12.0),
-            border: Border.all(color: theme.alternate, width: 1.0),
           ),
-          child: Row(
+          alignment: Alignment.center,
+          child: Icon(Icons.calendar_month_rounded,
+              color: theme.primary, size: 22.0),
+        ),
+        const SizedBox(width: 14.0),
+        Flexible(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.date_range_rounded,
-                  color: theme.secondaryText, size: 16.0),
-              const SizedBox(width: 8.0),
               Text(
-                rangeLabel.isEmpty ? '—' : rangeLabel,
-                style: theme.bodyMedium.override(
-                  font: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13.0,
+                'Calendário de Aulas',
+                style: theme.headlineSmall.override(
+                  font: GoogleFonts.interTight(fontWeight: FontWeight.w800),
+                  fontWeight: FontWeight.w800,
+                  fontSize: isCompact ? 22.0 : 26.0,
+                  letterSpacing: -0.4,
                   color: theme.primaryText,
+                ),
+              ),
+              const SizedBox(height: 2.0),
+              Text(
+                'Acompanhe as próximas aulas programadas.',
+                style: theme.bodyMedium.override(
+                  font: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13.0,
+                  color: theme.secondaryText,
                 ),
               ),
             ],
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _IconPillButton(
-              theme: theme,
-              icon: Icons.chevron_left_rounded,
-              tooltip: 'Semana anterior',
-              onTap: onPrev,
+      ],
+    );
+  }
+
+  Widget _rangePill() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        color: theme.primaryBackground,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(color: theme.alternate, width: 1.0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.date_range_rounded,
+              color: theme.secondaryText, size: 16.0),
+          const SizedBox(width: 8.0),
+          Text(
+            rangeLabel.isEmpty ? '—' : rangeLabel,
+            style: theme.bodyMedium.override(
+              font: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              fontWeight: FontWeight.w600,
+              fontSize: 13.0,
+              color: theme.primaryText,
             ),
-            const SizedBox(width: 8.0),
-            _IconPillButton(
-              theme: theme,
-              icon: Icons.today_rounded,
-              tooltip: 'Hoje',
-              onTap: onToday,
-            ),
-            const SizedBox(width: 8.0),
-            _IconPillButton(
-              theme: theme,
-              icon: Icons.chevron_right_rounded,
-              tooltip: 'Próxima semana',
-              onTap: onNext,
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _navButtons() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _IconPillButton(
+          theme: theme,
+          icon: Icons.chevron_left_rounded,
+          tooltip: 'Semana anterior',
+          onTap: onPrev,
         ),
+        const SizedBox(width: 8.0),
+        _IconPillButton(
+          theme: theme,
+          icon: Icons.today_rounded,
+          tooltip: 'Hoje',
+          onTap: onToday,
+        ),
+        const SizedBox(width: 8.0),
+        _IconPillButton(
+          theme: theme,
+          icon: Icons.chevron_right_rounded,
+          tooltip: 'Próxima semana',
+          onTap: onNext,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _titleBlock(),
+          const SizedBox(height: 12.0),
+          _rangePill(),
+          const SizedBox(height: 12.0),
+          _navButtons(),
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: _titleBlock()),
+        const SizedBox(width: 12.0),
+        _rangePill(),
+        const SizedBox(width: 12.0),
+        _navButtons(),
       ],
     );
   }

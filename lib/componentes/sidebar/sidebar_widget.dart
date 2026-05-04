@@ -1,4 +1,5 @@
 import '/auth/supabase_auth/auth_util.dart';
+import '/backend/api_requests/api_calls.dart';
 import '/backend/schema/structs/index.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -212,53 +213,92 @@ class _SidebarWidgetState extends State<SidebarWidget> {
   }
 }
 
-class _ChatBadge extends StatelessWidget {
+class _ChatBadge extends StatefulWidget {
   const _ChatBadge();
+
+  @override
+  State<_ChatBadge> createState() => _ChatBadgeState();
+}
+
+class _ChatBadgeState extends State<_ChatBadge> {
+  late Future<List<String>> _chatIdsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatIdsFuture = _loadChatIds();
+  }
+
+  Future<List<String>> _loadChatIds() async {
+    final res = await SupabaseGroup.listaChatsAbertosCall.call(
+      pUserId: currentUserUid,
+      token: currentJwtToken,
+    );
+    final body = res.jsonBody;
+    if (body is! List) return const [];
+    final ids = <String>{};
+    for (final item in body) {
+      if (item is Map) {
+        final cid = item['chat_id']?.toString();
+        if (cid != null && cid.isNotEmpty) ids.add(cid);
+      }
+    }
+    return ids.toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    return StreamBuilder<List<MensagensChatsRow>>(
-      stream: SupaFlow.client
-          .from('mensagens_chats')
-          .stream(primaryKey: ['id'])
-          .map((list) => list
-              .where((item) =>
-                  item['sender_id'] != currentUserUid &&
-                  item['lida'] != true)
-              .map((item) => MensagensChatsRow(item))
-              .toList()),
-      builder: (context, snapshot) {
-        final unread = snapshot.data?.length ?? 0;
-        if (unread == 0) return const SizedBox.shrink();
-        final label = unread > 99 ? '99+' : unread.toString();
-        return Positioned(
-          right: -6,
-          top: -6,
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 5.0, vertical: 2.0),
-            decoration: BoxDecoration(
-              color: theme.error,
-              borderRadius: BorderRadius.circular(999.0),
-              border: Border.all(color: theme.primaryBackground, width: 1.5),
-            ),
-            constraints: const BoxConstraints(
-              minWidth: 18.0,
-              minHeight: 18.0,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10.0,
-                fontWeight: FontWeight.w800,
-                height: 1.0,
+    return FutureBuilder<List<String>>(
+      future: _chatIdsFuture,
+      builder: (context, idsSnapshot) {
+        final chatIds = idsSnapshot.data ?? const <String>[];
+        if (chatIds.isEmpty) return const SizedBox.shrink();
+        return StreamBuilder<List<MensagensChatsRow>>(
+          stream: SupaFlow.client
+              .from('mensagens_chats')
+              .stream(primaryKey: ['id'])
+              .inFilter('chat_id', chatIds)
+              .map((list) => list
+                  .where((item) =>
+                      item['sender_id'] != currentUserUid &&
+                      item['lida'] != true)
+                  .map((item) => MensagensChatsRow(item))
+                  .toList()),
+          builder: (context, snapshot) {
+            final unread = snapshot.data?.length ?? 0;
+            if (unread == 0) return const SizedBox.shrink();
+            final label = unread > 99 ? '99+' : unread.toString();
+            return Positioned(
+              right: -6,
+              top: -6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 5.0, vertical: 2.0),
+                decoration: BoxDecoration(
+                  color: theme.error,
+                  borderRadius: BorderRadius.circular(999.0),
+                  border:
+                      Border.all(color: theme.primaryBackground, width: 1.5),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 18.0,
+                  minHeight: 18.0,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10.0,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-          ),
+            );
+          },
         );
       },
     );

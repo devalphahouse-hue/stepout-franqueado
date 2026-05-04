@@ -392,103 +392,130 @@ class _Header extends StatelessWidget {
     return theme.secondaryText;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = _statusColor();
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 12.0,
-      runSpacing: 12.0,
+  Widget _titleBlock() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _IconPillButton(
-              theme: theme,
-              icon: Icons.arrow_back_rounded,
-              tooltip: 'Voltar',
-              onTap: onBack,
-            ),
-            const SizedBox(width: 14.0),
-            Container(
-              width: 44.0,
-              height: 44.0,
-              decoration: BoxDecoration(
-                color: theme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              alignment: Alignment.center,
-              child: Icon(Icons.event_note_rounded,
-                  color: theme.primary, size: 22.0),
-            ),
-            const SizedBox(width: 14.0),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Detalhes da aula',
-                  style: theme.headlineSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w800),
-                    fontWeight: FontWeight.w800,
-                    fontSize: isCompact ? 22.0 : 26.0,
-                    letterSpacing: -0.4,
-                    color: theme.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 2.0),
-                Text(
-                  'Visualize e edite as informações desta aula.',
-                  style: theme.bodyMedium.override(
-                    font: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13.0,
-                    color: theme.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ],
+        _IconPillButton(
+          theme: theme,
+          icon: Icons.arrow_back_rounded,
+          tooltip: 'Voltar',
+          onTap: onBack,
         ),
-        const Spacer(),
+        const SizedBox(width: 14.0),
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+          width: 44.0,
+          height: 44.0,
           decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999.0),
+            color: theme.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12.0),
           ),
-          child: Row(
+          alignment: Alignment.center,
+          child: Icon(Icons.event_note_rounded,
+              color: theme.primary, size: 22.0),
+        ),
+        const SizedBox(width: 14.0),
+        Flexible(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 8.0,
-                height: 8.0,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
+              Text(
+                'Detalhes da aula',
+                style: theme.headlineSmall.override(
+                  font: GoogleFonts.interTight(fontWeight: FontWeight.w800),
+                  fontWeight: FontWeight.w800,
+                  fontSize: isCompact ? 22.0 : 26.0,
+                  letterSpacing: -0.4,
+                  color: theme.primaryText,
                 ),
               ),
-              const SizedBox(width: 8.0),
+              const SizedBox(height: 2.0),
               Text(
-                statusAula.isEmpty ? 'Sem status' : statusAula,
+                'Visualize e edite as informações desta aula.',
                 style: theme.bodyMedium.override(
-                  font: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12.5,
-                  color: statusColor,
+                  font: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13.0,
+                  color: theme.secondaryText,
                 ),
               ),
             ],
           ),
         ),
-        if (!finalizada)
-          _SecondaryButton(
+      ],
+    );
+  }
+
+  Widget _statusPill(Color statusColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        color: statusColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999.0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8.0,
+            height: 8.0,
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8.0),
+          Text(
+            statusAula.isEmpty ? 'Sem status' : statusAula,
+            style: theme.bodyMedium.override(
+              font: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              fontWeight: FontWeight.w700,
+              fontSize: 12.5,
+              color: statusColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _statusColor();
+    final reagendarBtn = !finalizada
+        ? _SecondaryButton(
             theme: theme,
             icon: Icons.calendar_month_rounded,
             label: 'Reagendar aula',
             onTap: onReagendar,
-          ),
+          )
+        : null;
+
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _titleBlock(),
+          const SizedBox(height: 12.0),
+          _statusPill(statusColor),
+          if (reagendarBtn != null) ...[
+            const SizedBox(height: 12.0),
+            reagendarBtn,
+          ],
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: _titleBlock()),
+        const SizedBox(width: 12.0),
+        _statusPill(statusColor),
+        if (reagendarBtn != null) ...[
+          const SizedBox(width: 12.0),
+          reagendarBtn,
+        ],
       ],
     );
   }

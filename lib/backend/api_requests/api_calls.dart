@@ -522,6 +522,8 @@ class FiltroCobrancaCall {
     String? pTipoCobranca = '',
     String? pUserId = '',
     String? pIfFranquia = '',
+    int? pPage = 1,
+    int? pPerPage = 10,
     String? token = '',
   }) async {
     final baseUrl = SupabaseGroup.getBaseUrl(
@@ -543,6 +545,8 @@ class FiltroCobrancaCall {
         'p_tipo_cobranca': pTipoCobranca,
         'p_user_id': pUserId,
         'p_if_franquia': pIfFranquia,
+        'p_page': pPage,
+        'p_per_page': pPerPage,
       },
       returnBody: true,
       encodeBodyUtf8: false,
@@ -785,6 +789,7 @@ class CriarCobrancaCartaoComSplitCall {
     String? bairro = '',
     int? parcelas,
     double? valorParcela,
+    String? idcobranca = '',
   }) async {
     final response = await makeCloudCall(
       _kPrivateApiFunctionName,
@@ -813,6 +818,7 @@ class CriarCobrancaCartaoComSplitCall {
           'bairro': bairro,
           'parcelas': parcelas,
           'valorParcela': valorParcela,
+          'idcobranca': idcobranca,
         },
       },
     );
@@ -861,6 +867,7 @@ class CriarCobrancaCartaoSemSplitCall {
     String? bairro = '',
     int? parcelas,
     double? valorParcela,
+    String? idcobranca = '',
   }) async {
     final response = await makeCloudCall(
       _kPrivateApiFunctionName,
@@ -889,6 +896,7 @@ class CriarCobrancaCartaoSemSplitCall {
           'bairro': bairro,
           'parcelas': parcelas,
           'valorParcela': valorParcela,
+          'idcobranca': idcobranca,
         },
       },
     );
@@ -921,6 +929,7 @@ class CriarCobrancaPixComSplitCall {
     double? valorsplit,
     String? descricao = '',
     String? walletIndicacao = '',
+    String? idcobranca = '',
   }) async {
     final response = await makeCloudCall(
       _kPrivateApiFunctionName,
@@ -933,6 +942,7 @@ class CriarCobrancaPixComSplitCall {
           'valorsplit': valorsplit,
           'descricao': descricao,
           'walletIndicacao': walletIndicacao,
+          'idcobranca': idcobranca,
         },
       },
     );
@@ -961,6 +971,7 @@ class CriarCobrancaPixSemSplitCall {
     double? valorsplit,
     String? descricao = '',
     String? walletsplit = '',
+    String? idcobranca = '',
   }) async {
     final response = await makeCloudCall(
       _kPrivateApiFunctionName,
@@ -973,6 +984,7 @@ class CriarCobrancaPixSemSplitCall {
           'valorsplit': valorsplit,
           'descricao': descricao,
           'walletsplit': walletsplit,
+          'idcobranca': idcobranca,
         },
       },
     );

@@ -1,25 +1,22 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Mantém a assinatura makeCloudCall(callName, input) por retrocompatibilidade
+// com os call-sites em api_calls.dart. O parâmetro `_functionName` é ignorado:
+// sempre invocamos a Edge Function `asaas-proxy` no Supabase, que substituiu
+// a Firebase Cloud Function antiga.
 Future<Map<String, dynamic>> makeCloudCall(
-  String callName,
+  String _functionName,
   Map<String, dynamic> input,
 ) async {
   try {
-    final response = await FirebaseFunctions.instance
-        .httpsCallable(callName, options: HttpsCallableOptions())
-        .call(input);
-    return response.data is Map
-        ? Map<String, dynamic>.from(response.data as Map)
-        : {};
-  } on FirebaseFunctionsException catch (e) {
-    print(
-      'Cloud call error!\n ${callName}'
-      'Code: ${e.code}\n'
-      'Details: ${e.details}\n'
-      'Message: ${e.message}',
+    final response = await Supabase.instance.client.functions.invoke(
+      'asaas-proxy',
+      body: input,
     );
-  } catch (e) {
-    print('Cloud call error:${callName} $e');
+    final data = response.data;
+    return data is Map ? Map<String, dynamic>.from(data) : {};
+  } catch (_) {
+    // Cloud call error silenciado em produção
   }
   return {};
 }

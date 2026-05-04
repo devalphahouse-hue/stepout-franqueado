@@ -370,6 +370,13 @@ const kBreakpointMedium = 767.0;
 const kBreakpointLarge = 991.0;
 bool isMobileWidth(BuildContext context) =>
     MediaQuery.sizeOf(context).width < kBreakpointSmall;
+
+double responsivePadding(BuildContext context) {
+  final width = MediaQuery.sizeOf(context).width;
+  if (width < kBreakpointSmall) return 12.0;
+  if (width < kBreakpointMedium) return 24.0;
+  return 48.0;
+}
 bool responsiveVisibility({
   required BuildContext context,
   bool phone = true,

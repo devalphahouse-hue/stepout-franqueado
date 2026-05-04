@@ -2,7 +2,7 @@ plugins {
    id "com.android.application"
    id "kotlin-android"
    id "dev.flutter.flutter-gradle-plugin"
-   id "com.google.gms.google-services"  // Google Services plugin
+   // id "com.google.gms.google-services"  // Google Services plugin — desativado: app franqueado é web-only, deps Firebase removidas
 
 }
 

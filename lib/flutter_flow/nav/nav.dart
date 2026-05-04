@@ -109,7 +109,10 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: FranquiaInativaWidget.routeName,
           path: FranquiaInativaWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => FranquiaInativaWidget(),
+          builder: (context, params) => FranquiaInativaWidget(
+            motivo: params.getParam('motivo', ParamType.String),
+            idCobranca: params.getParam('idCobranca', ParamType.String),
+          ),
         ),
         FFRoute(
           name: DetalhesProfessorWidget.routeName,

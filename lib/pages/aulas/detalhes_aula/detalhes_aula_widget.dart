@@ -285,6 +285,8 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
                               isCompact: isCompact,
                               finalizada: finalizada,
                               onSalvarProfessor: _salvarProfessor,
+                              onProfessorVisibilityChanged: () =>
+                                  safeSetState(() {}),
                             ),
                           ),
                           const SizedBox(height: 18.0),
@@ -894,6 +896,7 @@ class _InfoSection extends StatelessWidget {
     required this.isCompact,
     required this.finalizada,
     required this.onSalvarProfessor,
+    required this.onProfessorVisibilityChanged,
   });
 
   final FlutterFlowTheme theme;
@@ -902,6 +905,7 @@ class _InfoSection extends StatelessWidget {
   final bool isCompact;
   final bool finalizada;
   final VoidCallback onSalvarProfessor;
+  final VoidCallback onProfessorVisibilityChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -951,6 +955,7 @@ class _InfoSection extends StatelessWidget {
           isCompact: isCompact,
           finalizada: finalizada,
           onSalvarProfessor: onSalvarProfessor,
+          onVisibilityChanged: onProfessorVisibilityChanged,
         ),
         const SizedBox(height: 16.0),
         _LabeledField(
@@ -982,6 +987,7 @@ class _ProfessorBlock extends StatelessWidget {
     required this.isCompact,
     required this.finalizada,
     required this.onSalvarProfessor,
+    required this.onVisibilityChanged,
   });
 
   final FlutterFlowTheme theme;
@@ -990,6 +996,7 @@ class _ProfessorBlock extends StatelessWidget {
   final bool isCompact;
   final bool finalizada;
   final VoidCallback onSalvarProfessor;
+  final VoidCallback onVisibilityChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1059,6 +1066,7 @@ class _ProfessorBlock extends StatelessWidget {
                   label: 'Alterar',
                   onTap: () {
                     FFAppState().AlterarProfessorVisibility = true;
+                    onVisibilityChanged();
                   },
                 ),
             ],
@@ -1103,7 +1111,7 @@ class _ProfessorBlock extends StatelessWidget {
                     searchHintText: 'Buscar...',
                     icon: Icon(Icons.keyboard_arrow_down_rounded,
                         color: theme.secondaryText, size: 22.0),
-                    fillColor: Colors.transparent,
+                    fillColor: theme.primaryBackground,
                     elevation: 0.0,
                     borderColor: Colors.transparent,
                     borderWidth: 0.0,
@@ -1137,6 +1145,7 @@ class _ProfessorBlock extends StatelessWidget {
                         stretch: true,
                         onTap: () {
                           FFAppState().AlterarProfessorVisibility = false;
+                          onVisibilityChanged();
                         },
                       ),
                     ],
@@ -1158,6 +1167,7 @@ class _ProfessorBlock extends StatelessWidget {
                         label: 'Cancelar',
                         onTap: () {
                           FFAppState().AlterarProfessorVisibility = false;
+                          onVisibilityChanged();
                         },
                       ),
                     ],

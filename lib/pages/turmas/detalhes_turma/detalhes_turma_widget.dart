@@ -384,6 +384,8 @@ class _DetalhesTurmaWidgetState extends State<DetalhesTurmaWidget> {
                               isCompact: isCompact,
                               turma: turma,
                               onSalvarProfessor: _salvarProfessor,
+                              onProfessorVisibilityChanged: () =>
+                                  safeSetState(() {}),
                             ),
                           ),
                           const SizedBox(height: 18.0),
@@ -901,6 +903,7 @@ class _DadosSection extends StatelessWidget {
     required this.isCompact,
     required this.turma,
     required this.onSalvarProfessor,
+    required this.onProfessorVisibilityChanged,
   });
 
   final FlutterFlowTheme theme;
@@ -908,6 +911,7 @@ class _DadosSection extends StatelessWidget {
   final bool isCompact;
   final TurmasRow? turma;
   final VoidCallback onSalvarProfessor;
+  final VoidCallback onProfessorVisibilityChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -994,6 +998,7 @@ class _DadosSection extends StatelessWidget {
           turma: turma,
           isCompact: isCompact,
           onSalvarProfessor: onSalvarProfessor,
+          onVisibilityChanged: onProfessorVisibilityChanged,
         ),
       ],
     );
@@ -1007,6 +1012,7 @@ class _ProfessorBlock extends StatelessWidget {
     required this.turma,
     required this.isCompact,
     required this.onSalvarProfessor,
+    required this.onVisibilityChanged,
   });
 
   final FlutterFlowTheme theme;
@@ -1014,6 +1020,7 @@ class _ProfessorBlock extends StatelessWidget {
   final TurmasRow? turma;
   final bool isCompact;
   final VoidCallback onSalvarProfessor;
+  final VoidCallback onVisibilityChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1101,6 +1108,7 @@ class _ProfessorBlock extends StatelessWidget {
                       label: 'Alterar',
                       onTap: () {
                         FFAppState().AlterarProfessorVisibility = true;
+                        onVisibilityChanged();
                       },
                     ),
                 ],
@@ -1147,7 +1155,7 @@ class _ProfessorBlock extends StatelessWidget {
                     searchHintText: 'Buscar...',
                     icon: Icon(Icons.keyboard_arrow_down_rounded,
                         color: theme.secondaryText, size: 22.0),
-                    fillColor: Colors.transparent,
+                    fillColor: theme.primaryBackground,
                     elevation: 0.0,
                     borderColor: Colors.transparent,
                     borderWidth: 0.0,
@@ -1181,6 +1189,7 @@ class _ProfessorBlock extends StatelessWidget {
                         stretch: true,
                         onTap: () {
                           FFAppState().AlterarProfessorVisibility = false;
+                          onVisibilityChanged();
                         },
                       ),
                     ],
@@ -1202,6 +1211,7 @@ class _ProfessorBlock extends StatelessWidget {
                         label: 'Cancelar',
                         onTap: () {
                           FFAppState().AlterarProfessorVisibility = false;
+                          onVisibilityChanged();
                         },
                       ),
                     ],
@@ -1372,7 +1382,7 @@ class _DiaDropDown extends StatelessWidget {
         hintText: 'Selecione',
         icon: Icon(Icons.keyboard_arrow_down_rounded,
             color: theme.secondaryText, size: 22.0),
-        fillColor: Colors.transparent,
+        fillColor: theme.secondaryBackground,
         elevation: 0.0,
         borderColor: Colors.transparent,
         borderWidth: 0.0,
@@ -1649,7 +1659,7 @@ class _VincularAlunosSection extends StatelessWidget {
                     searchHintText: 'Buscar...',
                     icon: Icon(Icons.keyboard_arrow_down_rounded,
                         color: theme.secondaryText, size: 22.0),
-                    fillColor: Colors.transparent,
+                    fillColor: theme.secondaryBackground,
                     elevation: 0.0,
                     borderColor: Colors.transparent,
                     borderWidth: 0.0,

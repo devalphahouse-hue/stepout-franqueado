@@ -1418,7 +1418,7 @@ class _HoraField extends StatelessWidget {
       keyboardType: TextInputType.number,
       style: _fieldTextStyle(theme),
       cursorColor: theme.primary,
-      inputFormatters: [mask, FilteringTextInputFormatter.digitsOnly],
+      inputFormatters: [mask],
       decoration: _fieldDecoration(
         theme,
         hint: 'hh:mm',

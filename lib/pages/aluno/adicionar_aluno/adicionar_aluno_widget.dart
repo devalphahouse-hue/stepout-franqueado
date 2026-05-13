@@ -302,9 +302,11 @@ class _AdicionarAlunoWidgetState extends State<AdicionarAlunoWidget> {
               Expanded(
                 child: SingleChildScrollView(
                   primary: false,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: hPad,
-                    vertical: isCompact ? 20.0 : 28.0,
+                  padding: EdgeInsets.fromLTRB(
+                    hPad,
+                    isCompact ? 20.0 : 28.0,
+                    hPad,
+                    (isCompact ? 20.0 : 28.0) + 280.0,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

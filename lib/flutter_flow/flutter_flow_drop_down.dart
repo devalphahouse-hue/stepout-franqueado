@@ -132,11 +132,16 @@ class _FlutterFlowDropDownState<T> extends State<FlutterFlowDropDown<T>> {
   void initState() {
     super.initState();
     if (isMultiSelect) {
-      _listener =
-          () => widget.onMultiSelectChanged!(multiSelectController.value);
+      _listener = () {
+        widget.onMultiSelectChanged!(multiSelectController.value);
+        if (mounted) setState(() {});
+      };
       multiSelectController.addListener(_listener);
     } else {
-      _listener = () => widget.onChanged!(controller.value);
+      _listener = () {
+        widget.onChanged!(controller.value);
+        if (mounted) setState(() {});
+      };
       controller.addListener(_listener);
     }
   }
@@ -309,15 +314,15 @@ class _FlutterFlowDropDownState<T> extends State<FlutterFlowDropDown<T>> {
         padding: EdgeInsets.zero,
       ),
       dropdownStyleData: DropdownStyleData(
-        elevation: widget.elevation.toInt(),
+        elevation: widget.elevation.toInt() == 0 ? 4 : widget.elevation.toInt(),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4.0),
+          borderRadius: BorderRadius.circular(12.0),
           color: widget.fillColor,
         ),
         isOverButton: widget.isOverButton,
         offset: widget.menuOffset ?? Offset.zero,
-        maxHeight: widget.maxHeight,
-        padding: EdgeInsets.zero,
+        maxHeight: widget.maxHeight ?? 240,
+        padding: const EdgeInsets.symmetric(vertical: 6),
       ),
       onChanged: widget.disabled
           ? null
@@ -348,31 +353,52 @@ class _FlutterFlowDropDownState<T> extends State<FlutterFlowDropDown<T>> {
       dropdownSearchData: widget.isSearchable
           ? DropdownSearchData<T>(
               searchController: _textEditingController,
-              searchInnerWidgetHeight: 50,
+              searchInnerWidgetHeight: 48,
               searchInnerWidget: Container(
-                height: 50,
-                padding: const EdgeInsets.only(
-                  top: 8,
-                  bottom: 4,
-                  right: 8,
-                  left: 8,
-                ),
+                height: 48,
+                padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
                 child: TextFormField(
                   expands: true,
                   maxLines: null,
                   controller: _textEditingController,
-                  cursorColor: widget.searchCursorColor,
-                  style: widget.searchTextStyle,
+                  cursorColor:
+                      widget.searchCursorColor ?? const Color(0xFF1F2937),
+                  style: widget.searchTextStyle ??
+                      const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
                   decoration: InputDecoration(
                     isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFFF5F6F8),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
+                      horizontal: 12,
+                      vertical: 10,
                     ),
-                    hintText: widget.searchHintText,
-                    hintStyle: widget.searchHintTextStyle,
+                    hintText: widget.searchHintText ?? 'Buscar...',
+                    hintStyle: widget.searchHintTextStyle ??
+                        const TextStyle(
+                            fontSize: 14, color: Color(0xFF6B7280)),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: Color(0xFF6B7280),
+                    ),
+                    prefixIconConstraints:
+                        const BoxConstraints(minWidth: 36, minHeight: 36),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color:
+                            widget.searchCursorColor ?? const Color(0xFF2563EB),
+                        width: 1.4,
+                      ),
                     ),
                   ),
                 ),

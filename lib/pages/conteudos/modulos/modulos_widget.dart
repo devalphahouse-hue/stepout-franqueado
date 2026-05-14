@@ -13,9 +13,11 @@ class ModulosWidget extends StatefulWidget {
   const ModulosWidget({
     super.key,
     this.aula,
+    this.vinculadosCount,
   });
 
   final String? aula;
+  final int? vinculadosCount;
 
   static String routeName = 'Modulos';
   static String routePath = '/modulos';
@@ -29,12 +31,64 @@ class _ModulosWidgetState extends State<ModulosWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchCtrl = TextEditingController();
   String _search = '';
+  int? _totalVinculadosAula;
+
+  Future<void> _carregarTotalVinculados() async {
+    if (widget.aula == null || widget.aula!.isEmpty) return;
+    try {
+      final rows = await AulasTable().queryRows(
+        queryFn: (q) => q.eqOrNull('id', widget.aula),
+      );
+      final total = rows.firstOrNull?.conteudosVinculados.length ?? 0;
+      if (!mounted) return;
+      safeSetState(() => _totalVinculadosAula = total);
+    } catch (_) {
+      // Sem total atualizado: chip volta ao estado amarelo padrão.
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => ModulosModel());
-    WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+    _carregarTotalVinculados();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      safeSetState(() {});
+      final count = widget.vinculadosCount ?? 0;
+      if (count > 0) {
+        final theme = FlutterFlowTheme.of(context);
+        final msg = count == 1
+            ? '1 conteúdo vinculado à aula com sucesso'
+            : '$count conteúdos vinculados à aula com sucesso';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    msg,
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: theme.primary,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -97,6 +151,16 @@ class _ModulosWidgetState extends State<ModulosWidget> {
                         children: [
                           _Header(
                             isVincularContexto: isVincularContexto,
+                            vinculadosCount: _totalVinculadosAula,
+                            onVoltarAula: isVincularContexto
+                                ? () => context.pushNamed(
+                                      DetalhesAulaWidget.routeName,
+                                      queryParameters: {
+                                        'idAula': serializeParam(
+                                            widget.aula, ParamType.String),
+                                      }.withoutNulls,
+                                    )
+                                : null,
                           ),
                           SizedBox(height: 20),
                           _SearchBar(
@@ -212,7 +276,13 @@ class _ModulosWidgetState extends State<ModulosWidget> {
 
 class _Header extends StatelessWidget {
   final bool isVincularContexto;
-  const _Header({required this.isVincularContexto});
+  final int? vinculadosCount;
+  final VoidCallback? onVoltarAula;
+  const _Header({
+    required this.isVincularContexto,
+    this.vinculadosCount,
+    this.onVoltarAula,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -255,27 +325,71 @@ class _Header extends StatelessWidget {
           ),
         ),
         if (isVincularContexto)
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: theme.warning.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: theme.warning.withValues(alpha: 0.35)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.link_rounded, size: 14, color: theme.warning),
-                SizedBox(width: 6),
-                Text(
-                  'Selecione um conteúdo para vincular à aula',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: theme.warning,
+          Builder(builder: (context) {
+            final count = vinculadosCount ?? 0;
+            final isSucesso = count > 0;
+            final cor = isSucesso ? theme.primary : theme.warning;
+            final icone = isSucesso
+                ? Icons.check_circle_rounded
+                : Icons.link_rounded;
+            final texto = isSucesso
+                ? (count == 1
+                    ? '1 conteúdo vinculado à aula'
+                    : '$count conteúdos vinculados à aula')
+                : 'Selecione um conteúdo para vincular à aula';
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: cor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: cor.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icone, size: 14, color: cor),
+                  SizedBox(width: 6),
+                  Text(
+                    texto,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: cor,
+                    ),
                   ),
+                ],
+              ),
+            );
+          }),
+        if (isVincularContexto && onVoltarAula != null)
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onVoltarAula,
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: theme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: theme.primary.withValues(alpha: 0.35)),
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.arrow_back_rounded, size: 14, color: theme.primary),
+                    SizedBox(width: 6),
+                    Text(
+                      'Voltar à aula',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: theme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         Padding(

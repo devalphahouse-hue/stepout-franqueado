@@ -213,6 +213,10 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               'aula',
               ParamType.String,
             ),
+            vinculadosCount: params.getParam(
+              'vinculadosCount',
+              ParamType.int,
+            ),
           ),
         ),
         FFRoute(

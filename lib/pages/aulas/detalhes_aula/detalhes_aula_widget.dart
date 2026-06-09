@@ -104,6 +104,18 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
       }
       return;
     }
+    // Sucesso confirmado: o update concluiu. Mostra o feedback AGORA, antes do
+    // refresh de cache abaixo — os waitForApiRequestCompleted servem só pra
+    // atualizar a UI e, se um deles travar, não devem impedir o feedback.
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Professor atualizado com sucesso'),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
+          duration: const Duration(milliseconds: 2500),
+        ),
+      );
+    }
     safeSetState(() {
       _model.clearListaProfsCache();
       _model.apiRequestCompleted2 = false;
@@ -116,15 +128,6 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
     await _model.waitForApiRequestCompleted1();
     FFAppState().AlterarProfessorVisibility = false;
     safeSetState(() {});
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Professor atualizado com sucesso'),
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          duration: const Duration(milliseconds: 2500),
-        ),
-      );
-    }
   }
 
   Future<void> _removerConteudo(String? conteudoId) async {

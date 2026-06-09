@@ -220,35 +220,64 @@ class _DetalhesTurmaWidgetState extends State<DetalhesTurmaWidget> {
       await _showAlert('Selecione um aluno');
       return;
     }
-    await MetaAlunosTable().update(
-      data: {'turma': widget.idTurma},
-      matchingRows: (rows) => rows.eqOrNull('user_id', id),
-    );
-    await SupabaseGroup.vincularAlunoTurmaEAulasCall.call(
+    // O RPC é a fonte única: insere o vínculo N:N em aluno_turmas, mantém
+    // meta_alunos.turma como turma mais recente e adiciona o aluno nas aulas.
+    // Um aluno pode estar vinculado a várias turmas ao mesmo tempo.
+    final resp = await SupabaseGroup.vincularAlunoTurmaEAulasCall.call(
       pTurmaId: widget.idTurma,
       pUserId: id,
       token: currentJwtToken,
     );
+    if (!resp.succeeded) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Erro ao vincular o aluno. Tente novamente.'),
+            backgroundColor: FlutterFlowTheme.of(context).error,
+            duration: const Duration(milliseconds: 3000),
+          ),
+        );
+      }
+      return;
+    }
     safeSetState(() {
       _model.clearLsialunoturmaCache();
       _model.apiRequestCompleted = false;
     });
     await _model.waitForApiRequestCompleted();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Aluno vinculado'),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
+          duration: const Duration(milliseconds: 2500),
+        ),
+      );
+    }
   }
 
   Future<void> _desvincularAluno(String userId) async {
     if (!await _confirm('Desvincular esse aluno?')) return;
-    await MetaAlunosTable().update(
-      data: {'turma': null},
-      matchingRows: (rows) => rows
-          .eqOrNull('user_id', userId)
-          .eqOrNull('franquia_id', FFAppState().idfranquia),
-    );
-    await SupabaseGroup.desvincularAlunoTurmaEAulasCall.call(
+    // O RPC é a fonte única: remove o vínculo N:N desta turma, repõe
+    // meta_alunos.turma com outra turma do aluno (ou null) e tira o aluno das
+    // aulas desta turma — sem afetar as outras turmas em que ele está.
+    final resp = await SupabaseGroup.desvincularAlunoTurmaEAulasCall.call(
       pTurmaId: widget.idTurma,
       pUserId: userId,
       token: currentJwtToken,
     );
+    if (!resp.succeeded) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Erro ao desvincular o aluno. Tente novamente.'),
+            backgroundColor: FlutterFlowTheme.of(context).error,
+            duration: const Duration(milliseconds: 3000),
+          ),
+        );
+      }
+      return;
+    }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

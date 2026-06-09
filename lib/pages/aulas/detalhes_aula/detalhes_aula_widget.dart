@@ -87,10 +87,23 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
       );
       return;
     }
-    await AulasTable().update(
-      data: {'professor_responsavel': _model.dropDownProfessorValue},
-      matchingRows: (rows) => rows.eqOrNull('id', widget.idAula),
-    );
+    try {
+      await AulasTable().update(
+        data: {'professor_responsavel': _model.dropDownProfessorValue},
+        matchingRows: (rows) => rows.eqOrNull('id', widget.idAula),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Erro ao alterar o professor. Tente novamente.'),
+            backgroundColor: FlutterFlowTheme.of(context).error,
+            duration: const Duration(milliseconds: 3000),
+          ),
+        );
+      }
+      return;
+    }
     safeSetState(() {
       _model.clearListaProfsCache();
       _model.apiRequestCompleted2 = false;
@@ -103,6 +116,15 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
     await _model.waitForApiRequestCompleted1();
     FFAppState().AlterarProfessorVisibility = false;
     safeSetState(() {});
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Professor atualizado com sucesso'),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
+          duration: const Duration(milliseconds: 2500),
+        ),
+      );
+    }
   }
 
   Future<void> _removerConteudo(String? conteudoId) async {

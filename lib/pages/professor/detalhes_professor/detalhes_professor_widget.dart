@@ -267,24 +267,142 @@ class _DetalhesProfessorWidgetState extends State<DetalhesProfessorWidget> {
   Future<void> _deleteProfessor() async {
     if (_deleting) return;
 
+    final theme = FlutterFlowTheme.of(context);
     final confirm = await showDialog<bool>(
           context: context,
           builder: (alertDialogContext) {
             return WebViewAware(
               child: AlertDialog(
-                title: const Text('Excluir este professor?'),
-                content: const Text(
-                    'O registro será desativado e o professor perderá acesso ao app.'),
+                backgroundColor: theme.primaryBackground,
+                surfaceTintColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.0),
+                ),
+                insetPadding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 24.0),
+                contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                content: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 44.0,
+                            height: 44.0,
+                            decoration: BoxDecoration(
+                              color: theme.error.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.warning_amber_rounded,
+                              color: theme.error,
+                              size: 26.0,
+                            ),
+                          ),
+                          const SizedBox(width: 14.0),
+                          Expanded(
+                            child: Text(
+                              'Excluir este professor?',
+                              style: theme.headlineSmall.override(
+                                fontFamily: theme.headlineSmallFamily,
+                                color: theme.primaryText,
+                                fontSize: 20.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18.0),
+                      Text(
+                        'Esta ação é definitiva e não pode ser desfeita.',
+                        style: theme.bodyMedium.override(
+                          fontFamily: theme.bodyMediumFamily,
+                          color: theme.primaryText,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 14.0),
+                      Text(
+                        'Serão excluídos permanentemente:',
+                        style: theme.bodySmall.override(
+                          fontFamily: theme.bodySmallFamily,
+                          color: theme.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 8.0),
+                      _DeleteBullet(
+                          text: 'O login e o acesso ao app', theme: theme),
+                      _DeleteBullet(
+                          text: 'O cadastro e os dados do professor',
+                          theme: theme),
+                      _DeleteBullet(
+                          text: 'Os vínculos com a franquia', theme: theme),
+                      _DeleteBullet(
+                          text: 'As conversas e mensagens deste professor',
+                          theme: theme),
+                      const SizedBox(height: 14.0),
+                      Container(
+                        padding: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          color: theme.secondaryBackground,
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: theme.secondaryText,
+                              size: 18.0,
+                            ),
+                            const SizedBox(width: 8.0),
+                            Expanded(
+                              child: Text(
+                                'As turmas e aulas serão mantidas, apenas '
+                                'desvinculadas deste professor.',
+                                style: theme.bodySmall.override(
+                                  fontFamily: theme.bodySmallFamily,
+                                  color: theme.secondaryText,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actionsPadding:
+                    const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 actions: [
                   TextButton(
                     onPressed: () =>
                         Navigator.pop(alertDialogContext, false),
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.secondaryText,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18.0, vertical: 12.0),
+                    ),
                     child: const Text('Cancelar'),
                   ),
                   TextButton(
                     onPressed: () =>
                         Navigator.pop(alertDialogContext, true),
-                    child: const Text('Excluir'),
+                    style: TextButton.styleFrom(
+                      backgroundColor: theme.error,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20.0, vertical: 12.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    child: const Text('Excluir definitivamente'),
                   ),
                 ],
               ),
@@ -329,24 +447,37 @@ class _DetalhesProfessorWidgetState extends State<DetalhesProfessorWidget> {
             ) ??
             false;
         if (!confirmarVinculo) return;
-        for (final turma in turmasAtivas) {
-          await TurmasTable().update(
-            data: {'professor_responsavel': null},
-            matchingRows: (rows) => rows.eqOrNull('id', turma.id),
-          );
-        }
       }
-      final now = DateTime.now().toUtc().toIso8601String();
-      await MetaProfessorTable().update(
-        data: {'deleted_at': now},
-        matchingRows: (rows) => rows.eqOrNull('user_id', widget.profId),
+
+      // Hard delete server-side: a Edge Function `delete-user` desvincula
+      // turmas/aulas, apaga chats+mensagens, as linhas próprias do professor
+      // (meta_user_franquia / meta_professor / users) e o login em auth.users.
+      // Tudo isso exige service_role — não dá pra fazer pelo client.
+      final response = await Supabase.instance.client.functions.invoke(
+        'delete-user',
+        body: {'userId': widget.profId},
       );
-      await UsersTable().update(
-        data: {'deleted_at': now},
-        matchingRows: (rows) => rows.eqOrNull('id', widget.profId),
-      );
+      final data = response.data;
+      final success = data is Map && data['success'] == true;
+      if (!success) {
+        final erro = data is Map ? (data['error']?.toString() ?? '') : '';
+        throw Exception(erro.isNotEmpty ? erro : 'Falha ao excluir professor');
+      }
+
       if (!mounted) return;
       context.goNamed(ListaProfessoresWidget.routeName);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Não foi possível excluir o professor. Tente novamente.',
+            style: TextStyle(color: theme.primaryBackground),
+          ),
+          duration: const Duration(milliseconds: 4000),
+          backgroundColor: theme.error,
+        ),
+      );
     } finally {
       if (mounted) safeSetState(() => _deleting = false);
     }
@@ -1855,6 +1986,43 @@ class _SaveButtonState extends State<_SaveButton> {
                   ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DeleteBullet extends StatelessWidget {
+  const _DeleteBullet({required this.text, required this.theme});
+
+  final String text;
+  final FlutterFlowTheme theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2.0),
+            child: Icon(
+              Icons.close_rounded,
+              color: theme.error,
+              size: 16.0,
+            ),
+          ),
+          const SizedBox(width: 8.0),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.bodyMedium.override(
+                fontFamily: theme.bodyMediumFamily,
+                color: theme.primaryText,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

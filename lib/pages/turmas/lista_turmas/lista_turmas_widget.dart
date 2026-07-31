@@ -1,7 +1,6 @@
 import '/auth/supabase_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
 import '/backend/schema/structs/index.dart';
-import '/backend/supabase/supabase.dart';
 import '/componentes/sidebar/sidebar_widget.dart';
 import '/flutter_flow/flutter_flow_data_table.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -47,10 +46,14 @@ class _ListaTurmasWidgetState extends State<ListaTurmasWidget> {
 
   Future<void> _confirmDelete(ListaTurmasStruct item) async {
     final alunosCount = item.totalAlunos;
-    var mensagem = 'O registro será desativado.';
+    var mensagem =
+        'As aulas que ainda não aconteceram serão removidas do calendário. '
+        'As aulas já realizadas serão mantidas no histórico.';
     if (alunosCount > 0) {
       mensagem =
-          'Esta turma possui $alunosCount aluno(s) vinculado(s). Ao excluir, os alunos serão desvinculados.';
+          'Esta turma possui $alunosCount aluno(s) vinculado(s). Ao excluir, '
+          'os alunos serão desvinculados e as aulas que ainda não aconteceram '
+          'serão removidas do calendário (as já realizadas ficam no histórico).';
     }
     final confirm = await showDialog<bool>(
       context: context,
@@ -74,10 +77,25 @@ class _ListaTurmasWidgetState extends State<ListaTurmasWidget> {
       },
     );
     if (confirm ?? false) {
-      await TurmasTable().update(
-        data: {'deleted_at': DateTime.now().toUtc().toIso8601String()},
-        matchingRows: (rows) => rows.eqOrNull('id', item.id),
+      // A RPC excluir_turma faz tudo server-side: soft-delete da turma,
+      // apaga as aulas que ainda não começaram (mantendo as já realizadas)
+      // e desvincula o roster (aluno_turmas + fallback de meta_alunos.turma).
+      final resp = await SupabaseGroup.excluirTurmaCall.call(
+        pTurmaId: item.id,
+        token: currentJwtToken,
       );
+      if (!resp.succeeded) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Erro ao excluir a turma. Tente novamente.'),
+              backgroundColor: FlutterFlowTheme.of(context).error,
+              duration: const Duration(milliseconds: 3000),
+            ),
+          );
+        }
+        return;
+      }
       _model.clearListaTurmasCache();
       safeSetState(() {
         _model.apiRequestCompleted = false;

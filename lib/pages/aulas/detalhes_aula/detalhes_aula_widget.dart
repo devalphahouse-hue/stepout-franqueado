@@ -154,17 +154,10 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
       token: currentJwtToken,
     );
     if ((_model.apiResulthcv?.succeeded ?? true)) {
-      await AulasTable().update(
-        data: {
-          'alunos_convidados':
-              data.alunosConvidados.map((e) => e.uuid).toList(),
-        },
-        matchingRows: (rows) => rows.eqOrNull(
-          'id',
-          SupabaseGroup.criarAulaNoPlanningCall
-              .idaula(_model.apiResulthcv?.jsonBody ?? ''),
-        ),
-      );
+      // A RPC cria_aula_com_data já popula alunos_convidados server-side a
+      // partir de aluno_turmas (roster atual da turma). Não sobrescrever aqui
+      // com a lista da tela — ela pode estar stale (aluno vinculado depois do
+      // load) e vinha da coluna legada de turma única.
       if (!mounted) return;
       context.pushNamed(
         DetalhesAulaWidget.routeName,

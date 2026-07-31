@@ -1,3 +1,4 @@
+import '/auth/supabase_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
 import '/backend/supabase/supabase.dart';
 import '/componentes/sidebar/sidebar_widget.dart';
@@ -240,21 +241,40 @@ class _AdicionarAlunoWidgetState extends State<AdicionarAlunoWidget> {
         'id_franquia': FFAppState().idfranquia,
       });
 
+      final turmaSelecionada =
+          _model.dropDownValue == '0' ? null : _model.dropDownValue;
+
       _model.criarMetaUser = await MetaAlunosTable().insert({
         'user_id': _model.criarUser?.id,
         'franquia_id': FFAppState().idfranquia,
-        'turma': _model.dropDownValue == '0' ? null : _model.dropDownValue,
+        'turma': turmaSelecionada,
       });
+
+      // O insert acima só grava o cadastro; o vínculo completo (aluno_turmas +
+      // alunos_convidados das aulas já criadas) é feito pela mesma RPC usada
+      // ao vincular pela tela da turma. A RPC é idempotente.
+      var vinculoOk = true;
+      if (turmaSelecionada != null && turmaSelecionada.isNotEmpty) {
+        final vinculo = await SupabaseGroup.vincularAlunoTurmaEAulasCall.call(
+          pTurmaId: turmaSelecionada,
+          pUserId: _model.criarUser?.id,
+          token: currentJwtToken,
+        );
+        vinculoOk = vinculo.succeeded;
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Aluno adicionado com sucesso',
+            vinculoOk
+                ? 'Aluno adicionado com sucesso'
+                : 'Aluno criado, mas houve um erro ao vincular à turma. '
+                    'Vincule novamente pela tela da turma.',
             style: TextStyle(color: theme.primaryBackground),
           ),
           duration: const Duration(milliseconds: 3500),
-          backgroundColor: theme.primary,
+          backgroundColor: vinculoOk ? theme.primary : theme.error,
         ),
       );
 
@@ -1153,9 +1173,11 @@ class _TurmaSection extends StatelessWidget {
           return FlutterFlowDropDown<String>(
             controller: model.dropDownValueController ??=
                 FormFieldController<String>(model.dropDownValue ??= '0'),
+            // As duas listas precisam ter o mesmo tamanho/ordem — filtrar só
+            // optionLabels desalinharia label e id se houver turma sem nome.
             options: List<String>.from(turmas.map((e) => e.id).toList()),
             optionLabels:
-                turmas.map((e) => e.nomeDaTurma).withoutNulls.toList(),
+                turmas.map((e) => e.nomeDaTurma ?? '(sem nome)').toList(),
             onChanged: (val) => model.dropDownValue = val,
             width: double.infinity,
             height: 48.0,

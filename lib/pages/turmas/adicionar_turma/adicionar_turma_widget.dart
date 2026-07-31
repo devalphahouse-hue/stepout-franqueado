@@ -1366,8 +1366,12 @@ class _VincularAlunosSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FutureBuilder<ApiCallResponse>(
-          future: SupabaseGroup.listaAlunosCall.call(
-            pFranquiaId: FFAppState().idfranquia,
+          // get_students_by_franquia (ListaAlunosCall) não filtra deleted_at
+          // e devolve alunos soft-deletados duplicando o dropdown; a RPC com
+          // search vazio aplica o filtro.
+          future: SupabaseGroup.listaAlunosFiltroCall.call(
+            pIdFranquia: FFAppState().idfranquia,
+            pSearch: '',
             token: currentJwtToken,
           ),
           builder: (context, snapshot) {

@@ -50,6 +50,7 @@ class SupabaseGroup {
       VincularAlunoTurmaEAulasCall();
   static DesvincularAlunoTurmaEAulasCall desvincularAlunoTurmaEAulasCall =
       DesvincularAlunoTurmaEAulasCall();
+  static ExcluirTurmaCall excluirTurmaCall = ExcluirTurmaCall();
 }
 
 class SignupCall {
@@ -643,6 +644,42 @@ class VincularAlunoTurmaEAulasCall {
     return ApiManager.instance.makeApiCall(
       callName: 'vincular aluno turma e aulas',
       apiUrl: '${baseUrl}/rest/v1/rpc/vincular_aluno_turma_e_aulas',
+      callType: ApiCallType.POST,
+      headers: {
+        'apikey':
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtZml0a256dHZ4dnpwZ2p5dnhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzMjYzNTEsImV4cCI6MjA2NDkwMjM1MX0.IcGtCLKkPmULcM85Kl19C_-4P5-w0MWQriseRB3mGTI',
+        'Authorization': 'Bearer ${token}',
+        'Content-Type': 'application/json',
+      },
+      params: {},
+      body: ffApiRequestBody,
+      bodyType: BodyType.JSON,
+      returnBody: true,
+      encodeBodyUtf8: false,
+      decodeUtf8: false,
+      cache: false,
+      isStreamingApi: false,
+      alwaysAllowBody: false,
+    );
+  }
+}
+
+class ExcluirTurmaCall {
+  Future<ApiCallResponse> call({
+    String? pTurmaId = '',
+    String? token = '',
+  }) async {
+    final baseUrl = SupabaseGroup.getBaseUrl(
+      token: token,
+    );
+
+    final ffApiRequestBody = '''
+{
+  "p_turma_id": "${escapeStringForJson(pTurmaId)}"
+}''';
+    return ApiManager.instance.makeApiCall(
+      callName: 'excluir turma',
+      apiUrl: '${baseUrl}/rest/v1/rpc/excluir_turma',
       callType: ApiCallType.POST,
       headers: {
         'apikey':

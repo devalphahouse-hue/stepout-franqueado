@@ -25,6 +25,74 @@ class _PlanosWidgetState extends State<PlanosWidget> {
   late PlanosModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Modo demo produção: mesmos fluxos reais de pagamento (split, webhook),
+  // com valores reduzidos pra validar o ambiente de produção do Asaas pagando
+  // de verdade. Ativado por long-press no selo "Torne-se franqueado" + código.
+  static const String _demoCode = 'stepout-demo';
+  bool _demoProd = false;
+
+  Future<void> _promptDemoProd() async {
+    if (_demoProd) {
+      setState(() => _demoProd = false);
+      return;
+    }
+    final controller = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final theme = FlutterFlowTheme.of(dialogContext);
+        return AlertDialog(
+          title: Text('Modo demo produção', style: theme.titleMedium),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Reduz os valores dos planos para testar o fluxo real de '
+                'pagamento (split e webhook) em produção. As cobranças são '
+                'reais — estorne depois pelo painel do Asaas.',
+                style: theme.bodySmall,
+              ),
+              const SizedBox(height: 12.0),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Código de acesso',
+                  border: OutlineInputBorder(),
+                ),
+                onSubmitted: (_) => Navigator.of(dialogContext)
+                    .pop(controller.text.trim() == _demoCode),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext)
+                  .pop(controller.text.trim() == _demoCode),
+              child: const Text('Ativar'),
+            ),
+          ],
+        );
+      },
+    );
+    final typedSomething = controller.text.trim().isNotEmpty;
+    controller.dispose();
+    if (!mounted) return;
+    if (ok == true) {
+      setState(() => _demoProd = true);
+    } else if (ok == false && typedSomething) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Código incorreto.')),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -68,40 +136,78 @@ class _PlanosWidgetState extends State<PlanosWidget> {
     final width = MediaQuery.sizeOf(context).width;
     final showHero = width >= kBreakpointMedium;
 
-    final plans = <_PlanSpec>[
-      const _PlanSpec(
-        planoIdx: 1.0,
-        title: 'À vista',
-        subtitle: 'Pagamento único, melhor preço.',
-        priceLabel: 'R\$ 20.000,00',
-        installmentsLabel: 'Pagamento único',
-        totalValor: 20000.0,
-        parcelas: 1,
-        valorParcela: 20000.0,
-        savings: 'Economize até R\$ 10.000',
-        recommended: true,
-      ),
-      const _PlanSpec(
-        planoIdx: 2.0,
-        title: '6 parcelas',
-        subtitle: 'Sem juros, no boleto ou cartão.',
-        priceLabel: '6x de R\$ 4.167',
-        installmentsLabel: 'Total R\$ 25.000,00',
-        totalValor: 25000.0,
-        parcelas: 6,
-        valorParcela: 4167.0,
-      ),
-      const _PlanSpec(
-        planoIdx: 3.0,
-        title: '12 parcelas',
-        subtitle: 'Parcelas menores ao longo do ano.',
-        priceLabel: '12x de R\$ 2.500',
-        installmentsLabel: 'Total R\$ 30.000,00',
-        totalValor: 30000.0,
-        parcelas: 12,
-        valorParcela: 2500.0,
-      ),
-    ];
+    final plans = _demoProd
+        ? <_PlanSpec>[
+            // Valores mínimos pagáveis de verdade (parcela mínima do Asaas é
+            // R$ 5). Mesmos planoIdx/parcelas dos planos reais — só o valor
+            // muda, e ele flui pelo struct contratacaoFranquado até o
+            // checkout e o INSERT em cobrancas.
+            const _PlanSpec(
+              planoIdx: 1.0,
+              title: 'À vista (DEMO)',
+              subtitle: 'Teste real de produção com valor reduzido.',
+              priceLabel: 'R\$ 10,00',
+              installmentsLabel: 'Pagamento único',
+              totalValor: 10.0,
+              parcelas: 1,
+              valorParcela: 10.0,
+              recommended: true,
+            ),
+            const _PlanSpec(
+              planoIdx: 2.0,
+              title: '6 parcelas (DEMO)',
+              subtitle: 'Teste real de produção com valor reduzido.',
+              priceLabel: '6x de R\$ 5,00',
+              installmentsLabel: 'Total R\$ 30,00',
+              totalValor: 30.0,
+              parcelas: 6,
+              valorParcela: 5.0,
+            ),
+            const _PlanSpec(
+              planoIdx: 3.0,
+              title: '12 parcelas (DEMO)',
+              subtitle: 'Teste real de produção com valor reduzido.',
+              priceLabel: '12x de R\$ 5,00',
+              installmentsLabel: 'Total R\$ 60,00',
+              totalValor: 60.0,
+              parcelas: 12,
+              valorParcela: 5.0,
+            ),
+          ]
+        : <_PlanSpec>[
+            const _PlanSpec(
+              planoIdx: 1.0,
+              title: 'À vista',
+              subtitle: 'Pagamento único, melhor preço.',
+              priceLabel: 'R\$ 20.000,00',
+              installmentsLabel: 'Pagamento único',
+              totalValor: 20000.0,
+              parcelas: 1,
+              valorParcela: 20000.0,
+              savings: 'Economize até R\$ 10.000',
+              recommended: true,
+            ),
+            const _PlanSpec(
+              planoIdx: 2.0,
+              title: '6 parcelas',
+              subtitle: 'Sem juros, no boleto ou cartão.',
+              priceLabel: '6x de R\$ 4.167',
+              installmentsLabel: 'Total R\$ 25.000,00',
+              totalValor: 25000.0,
+              parcelas: 6,
+              valorParcela: 4167.0,
+            ),
+            const _PlanSpec(
+              planoIdx: 3.0,
+              title: '12 parcelas',
+              subtitle: 'Parcelas menores ao longo do ano.',
+              priceLabel: '12x de R\$ 2.500',
+              installmentsLabel: 'Total R\$ 30.000,00',
+              totalValor: 30000.0,
+              parcelas: 12,
+              valorParcela: 2500.0,
+            ),
+          ];
 
     return GestureDetector(
       onTap: () {
@@ -121,6 +227,8 @@ class _PlanosWidgetState extends State<PlanosWidget> {
                   plans: plans,
                   onSelect: _selectPlan,
                   onLogin: () => context.pushNamed(LoginWidget.routeName),
+                  demoActive: _demoProd,
+                  onDemoGesture: _promptDemoProd,
                 ),
               ),
               if (showHero)
@@ -167,11 +275,15 @@ class _PlanosFormPanel extends StatelessWidget {
     required this.plans,
     required this.onSelect,
     required this.onLogin,
+    this.demoActive = false,
+    this.onDemoGesture,
   });
 
   final List<_PlanSpec> plans;
   final ValueChanged<_PlanSpec> onSelect;
   final VoidCallback onLogin;
+  final bool demoActive;
+  final VoidCallback? onDemoGesture;
 
   @override
   Widget build(BuildContext context) {
@@ -192,31 +304,34 @@ class _PlanosFormPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12.0, vertical: 6.0),
-                    decoration: BoxDecoration(
-                      color: theme.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.workspace_premium_rounded,
-                            size: 14, color: theme.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Torne-se franqueado',
-                          style: theme.labelMedium.override(
-                            font:
-                                GoogleFonts.inter(fontWeight: FontWeight.w700),
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: theme.primary,
-                            letterSpacing: 0.6,
+                  child: GestureDetector(
+                    onLongPress: onDemoGesture,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0, vertical: 6.0),
+                      decoration: BoxDecoration(
+                        color: theme.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.workspace_premium_rounded,
+                              size: 14, color: theme.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Torne-se franqueado',
+                            style: theme.labelMedium.override(
+                              font: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w700),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: theme.primary,
+                              letterSpacing: 0.6,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -245,6 +360,42 @@ class _PlanosFormPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24.0),
+                if (demoActive) ...[
+                  GestureDetector(
+                    onTap: onDemoGesture,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14.0, vertical: 10.0),
+                      decoration: BoxDecoration(
+                        color: theme.warning.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12.0),
+                        border: Border.all(color: theme.warning, width: 1.2),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.science_rounded,
+                              size: 18, color: theme.warning),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'MODO DEMO PRODUÇÃO ativo — valores reduzidos '
+                              'para teste real. Toque aqui para desativar.',
+                              style: theme.labelMedium.override(
+                                font: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w700),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: theme.warning,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12.0),
+                ],
                 ...plans.map(
                   (p) => Padding(
                     padding: const EdgeInsets.only(bottom: 12.0),

@@ -181,6 +181,12 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                       active: route == 'Indicacao',
                       onTap: () => _push(IndicacoesWidget.routeName),
                     ),
+                    _SidebarItem(
+                      icon: Icons.vpn_key_rounded,
+                      label: 'Acesso',
+                      active: route == 'Acesso',
+                      onTap: () => _push(AcessoWidget.routeName),
+                    ),
                   ],
                 ),
               ),

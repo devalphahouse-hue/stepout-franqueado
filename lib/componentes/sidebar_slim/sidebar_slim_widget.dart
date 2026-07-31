@@ -161,6 +161,12 @@ class _SidebarSlimWidgetState extends State<SidebarSlimWidget> {
                       active: widget.route == 'Indicacoes',
                       onTap: () => _push(IndicacoesWidget.routeName),
                     ),
+                    _NavItem(
+                      icon: Icons.vpn_key_rounded,
+                      label: 'Acesso',
+                      active: widget.route == 'Acesso',
+                      onTap: () => _push(AcessoWidget.routeName),
+                    ),
                   ],
                 ),
               ),

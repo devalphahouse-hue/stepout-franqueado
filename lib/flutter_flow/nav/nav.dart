@@ -278,6 +278,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => IndicacoesWidget(),
         ),
         FFRoute(
+          name: AcessoWidget.routeName,
+          path: AcessoWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => AcessoWidget(),
+        ),
+        FFRoute(
           name: FinanceiroWidget.routeName,
           path: FinanceiroWidget.routePath,
           requireAuth: true,

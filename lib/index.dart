@@ -34,6 +34,7 @@ export '/pages/gerais/chat/chat_widget.dart' show ChatWidget;
 export '/pages/gerais/treinamentos/treinamentos_widget.dart'
     show TreinamentosWidget;
 export '/pages/gerais/indicacoes/indicacoes_widget.dart' show IndicacoesWidget;
+export '/pages/gerais/acesso/acesso_widget.dart' show AcessoWidget;
 export '/pages/gerais/financeiro/financeiro_widget.dart' show FinanceiroWidget;
 export '/pages/gerais/perfil/perfil_widget.dart' show PerfilWidget;
 export '/pages/aulas/historico_aulas/historico_aulas_widget.dart'

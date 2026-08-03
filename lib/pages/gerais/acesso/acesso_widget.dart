@@ -29,6 +29,10 @@ class _AcessoWidgetState extends State<AcessoWidget> {
 
   static const String _professorLink = 'https://professor.stepout.com.br';
   static const String _alunoLink = 'https://aluno.stepout.com.br';
+  static const String _alunoAppStoreLink =
+      'https://apps.apple.com/us/app/stepout-aluno/id6771817851';
+  static const String _alunoPlayStoreLink =
+      'https://play.google.com/store/apps/details?id=br.com.stepout.aluno.app';
 
   @override
   void initState() {
@@ -40,6 +44,12 @@ class _AcessoWidgetState extends State<AcessoWidget> {
     _model.professorFocusNode ??= FocusNode();
     _model.alunoController ??= TextEditingController(text: _alunoLink);
     _model.alunoFocusNode ??= FocusNode();
+    _model.appStoreController ??=
+        TextEditingController(text: _alunoAppStoreLink);
+    _model.appStoreFocusNode ??= FocusNode();
+    _model.playStoreController ??=
+        TextEditingController(text: _alunoPlayStoreLink);
+    _model.playStoreFocusNode ??= FocusNode();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
@@ -101,7 +111,7 @@ class _AcessoWidgetState extends State<AcessoWidget> {
                       children: [
                         _buildHeader(theme, isMobile),
                         const SizedBox(height: 24),
-                        _buildLinkCard(
+                        _buildCard(
                           theme: theme,
                           isMobile: isMobile,
                           accent: _kProfessorColor,
@@ -110,13 +120,20 @@ class _AcessoWidgetState extends State<AcessoWidget> {
                           title: 'Portal do Professor',
                           subtitle:
                               'Envie este link para o professor acessar o painel de aulas, turmas e conteúdos.',
-                          controller: _model.professorController!,
-                          focusNode: _model.professorFocusNode!,
-                          copyKey: 'professor',
-                          link: _professorLink,
+                          children: [
+                            _buildCopyRow(
+                              theme: theme,
+                              isMobile: isMobile,
+                              accent: _kProfessorColor,
+                              controller: _model.professorController!,
+                              focusNode: _model.professorFocusNode!,
+                              copyKey: 'professor',
+                              link: _professorLink,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
-                        _buildLinkCard(
+                        _buildCard(
                           theme: theme,
                           isMobile: isMobile,
                           accent: _kAlunoColor,
@@ -125,10 +142,53 @@ class _AcessoWidgetState extends State<AcessoWidget> {
                           title: 'Portal do Aluno',
                           subtitle:
                               'Envie este link para o aluno acessar as aulas ao vivo, o chat e as cobranças.',
-                          controller: _model.alunoController!,
-                          focusNode: _model.alunoFocusNode!,
-                          copyKey: 'aluno',
-                          link: _alunoLink,
+                          children: [
+                            _buildCopyRow(
+                              theme: theme,
+                              isMobile: isMobile,
+                              accent: _kAlunoColor,
+                              controller: _model.alunoController!,
+                              focusNode: _model.alunoFocusNode!,
+                              copyKey: 'aluno',
+                              link: _alunoLink,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCard(
+                          theme: theme,
+                          isMobile: isMobile,
+                          accent: _kAlunoColor,
+                          icon: Icons.smartphone_rounded,
+                          badge: 'Aluno',
+                          title: 'App do Aluno',
+                          subtitle:
+                              'No celular, o aluno usa o aplicativo. Envie o link da loja certa (iPhone ou Android) para ele baixar.',
+                          children: [
+                            _buildCopyRow(
+                              theme: theme,
+                              isMobile: isMobile,
+                              accent: _kAlunoColor,
+                              controller: _model.appStoreController!,
+                              focusNode: _model.appStoreFocusNode!,
+                              copyKey: 'appstore',
+                              link: _alunoAppStoreLink,
+                              fieldIcon: Icons.apple_rounded,
+                              label: 'App Store (iPhone/iPad)',
+                            ),
+                            const SizedBox(height: 14),
+                            _buildCopyRow(
+                              theme: theme,
+                              isMobile: isMobile,
+                              accent: _kAlunoColor,
+                              controller: _model.playStoreController!,
+                              focusNode: _model.playStoreFocusNode!,
+                              copyKey: 'playstore',
+                              link: _alunoPlayStoreLink,
+                              fieldIcon: Icons.android_rounded,
+                              label: 'Google Play (Android)',
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -183,7 +243,7 @@ class _AcessoWidgetState extends State<AcessoWidget> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Copie o link do portal e envie para o professor ou para o aluno.',
+          'Copie o link do portal ou das lojas de aplicativos e envie para o professor ou para o aluno.',
           style: GoogleFonts.inter(
             fontSize: 13.5,
             color: theme.secondaryText,
@@ -194,18 +254,16 @@ class _AcessoWidgetState extends State<AcessoWidget> {
     );
   }
 
-  Widget _buildLinkCard({
+  Widget _buildCopyRow({
     required FlutterFlowTheme theme,
     required bool isMobile,
     required Color accent,
-    required IconData icon,
-    required String badge,
-    required String title,
-    required String subtitle,
     required TextEditingController controller,
     required FocusNode focusNode,
     required String copyKey,
     required String link,
+    IconData fieldIcon = Icons.public_rounded,
+    String? label,
   }) {
     final justCopied = _copied == copyKey;
 
@@ -222,8 +280,7 @@ class _AcessoWidgetState extends State<AcessoWidget> {
         isDense: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        prefixIcon:
-            Icon(Icons.public_rounded, size: 18, color: theme.secondaryText),
+        prefixIcon: Icon(fieldIcon, size: 18, color: theme.secondaryText),
         prefixIconConstraints:
             const BoxConstraints(minWidth: 40, minHeight: 0),
         filled: true,
@@ -273,6 +330,55 @@ class _AcessoWidgetState extends State<AcessoWidget> {
       ),
     );
 
+    final row = isMobile
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              field,
+              const SizedBox(height: 10),
+              copyBtn,
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: field),
+              const SizedBox(width: 12),
+              copyBtn,
+            ],
+          );
+
+    if (label == null) return row;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w700,
+            fontSize: 11.5,
+            color: theme.secondaryText,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 6),
+        row,
+      ],
+    );
+  }
+
+  Widget _buildCard({
+    required FlutterFlowTheme theme,
+    required bool isMobile,
+    required Color accent,
+    required IconData icon,
+    required String badge,
+    required String title,
+    required String subtitle,
+    required List<Widget> children,
+  }) {
     return Container(
       padding: EdgeInsets.all(isMobile ? 16 : 22),
       decoration: BoxDecoration(
@@ -282,7 +388,7 @@ class _AcessoWidgetState extends State<AcessoWidget> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -352,25 +458,7 @@ class _AcessoWidgetState extends State<AcessoWidget> {
             ],
           ),
           const SizedBox(height: 14),
-          if (isMobile)
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                field,
-                const SizedBox(height: 10),
-                copyBtn,
-              ],
-            )
-          else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(child: field),
-                const SizedBox(width: 12),
-                copyBtn,
-              ],
-            ),
+          ...children,
         ],
       ),
     );

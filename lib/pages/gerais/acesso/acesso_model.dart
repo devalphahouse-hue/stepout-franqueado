@@ -13,6 +13,10 @@ class AcessoModel extends FlutterFlowModel<AcessoWidget> {
   TextEditingController? professorController;
   FocusNode? alunoFocusNode;
   TextEditingController? alunoController;
+  FocusNode? appStoreFocusNode;
+  TextEditingController? appStoreController;
+  FocusNode? playStoreFocusNode;
+  TextEditingController? playStoreController;
 
   @override
   void initState(BuildContext context) {
@@ -26,5 +30,9 @@ class AcessoModel extends FlutterFlowModel<AcessoWidget> {
     professorController?.dispose();
     alunoFocusNode?.dispose();
     alunoController?.dispose();
+    appStoreFocusNode?.dispose();
+    appStoreController?.dispose();
+    playStoreFocusNode?.dispose();
+    playStoreController?.dispose();
   }
 }

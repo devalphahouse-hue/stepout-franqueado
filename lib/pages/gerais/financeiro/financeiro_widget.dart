@@ -295,7 +295,7 @@ class _Header extends StatelessWidget {
         _StatChip(
           icon: Icons.receipt_long_rounded,
           label: '$count ${count == 1 ? "cobrança" : "cobranças"}',
-          color: theme.info,
+          color: theme.secondaryText,
         ),
         _StatChip(
           icon: Icons.savings_rounded,

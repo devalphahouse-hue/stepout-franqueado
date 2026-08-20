@@ -592,8 +592,33 @@ class _DetalhesAlunoWidgetState extends State<DetalhesAlunoWidget> {
         ) ??
         false;
     if (!confirm) return;
+    // Se a cobrança já existe no Asaas, cancela lá primeiro — só marca como
+    // cancelada localmente se o Asaas confirmar (evita cobrança viva no Asaas
+    // com status cancelado na plataforma).
+    final asaasId = cobranca.idCobrancaAsaas;
+    if (asaasId != null && asaasId.isNotEmpty) {
+      final cancelResp =
+          await AsaasGroup.cancelarCobrancaCall.call(id: asaasId);
+      if (!mounted) return;
+      if (!cancelResp.succeeded) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Não foi possível cancelar a cobrança no Asaas. Tente novamente.',
+              style: TextStyle(color: theme.primaryBackground),
+            ),
+            duration: const Duration(milliseconds: 4000),
+            backgroundColor: theme.error,
+          ),
+        );
+        return;
+      }
+    }
     await CobrancasTable().update(
-      data: {'status_plat': 'Cancelada'},
+      data: {
+        'status_plat': 'Cancelada',
+        'status_cobranca': 'CANCELLED',
+      },
       matchingRows: (rows) => rows.eqOrNull('id', cobranca.id),
     );
     if (!mounted) return;

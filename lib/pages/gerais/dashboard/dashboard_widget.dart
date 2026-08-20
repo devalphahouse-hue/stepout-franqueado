@@ -350,12 +350,14 @@ class _MetricsSection extends StatelessWidget {
       theme: theme,
       icon: Icons.payments_rounded,
       label: 'Faturamento',
-      hint: 'Soma das cobranças da franquia',
+      hint: 'Soma das cobranças pagas da franquia',
       valueBuilder: () {
         return FutureBuilder<List<CobrancasRow>>(
           future: CobrancasTable().queryRows(
-            queryFn: (q) =>
-                q.eqOrNull('if_franquia', FFAppState().idfranquia),
+            queryFn: (q) => q
+                .eqOrNull('if_franquia', FFAppState().idfranquia)
+                .inFilter('status_cobranca',
+                    ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']),
           ),
           builder: (context, snap) {
             if (!snap.hasData) return _MetricSkeleton(theme: theme);

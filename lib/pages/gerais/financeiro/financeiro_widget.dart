@@ -582,6 +582,7 @@ class _Table extends StatelessWidget {
               children: [
                 _HeaderCell(label: 'ID da cobrança', flex: 3),
                 _HeaderCell(label: 'Valor', flex: 2),
+                _HeaderCell(label: 'Repasse (80%)', flex: 2),
                 _HeaderCell(label: 'Aluno', flex: 3),
                 _HeaderCell(label: 'Data', flex: 2),
                 _HeaderCell(label: 'Status', flex: 2),
@@ -654,8 +655,14 @@ class _RowItemState extends State<_RowItem> {
       getJsonField(widget.item, r'''$.id_cobranca_asaas''')?.toString(),
       getJsonField(widget.item, r'''$.id''')?.toString(),
     );
-    final valor = functions.formatCurrencyBr(
-      getJsonField(widget.item, r'''$.valor'''),
+    final valorRaw = getJsonField(widget.item, r'''$.valor''');
+    final valorNum =
+        valorRaw is num ? valorRaw : num.tryParse(valorRaw?.toString() ?? '');
+    final valor = functions.formatCurrencyBr(valorRaw);
+    // Repasse da franquia: 80% do valor da mensalidade (estimado sobre o
+    // bruto — o split real do Asaas incide sobre o líquido pós-taxa).
+    final repasse = functions.formatCurrencyBr(
+      valorNum == null ? null : valorNum * 0.8,
     );
     final aluno =
         getJsonField(widget.item, r'''$.user_nome''')?.toString() ?? '-';
@@ -728,6 +735,19 @@ class _RowItemState extends State<_RowItem> {
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: SelectionArea(
+                      child: Text(
+                        repasse,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: theme.secondaryText,
                         ),
                       ),
                     ),

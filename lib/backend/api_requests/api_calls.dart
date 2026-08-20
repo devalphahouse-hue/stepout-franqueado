@@ -756,6 +756,29 @@ class AsaasGroup {
   static CriarClienteCall criarClienteCall = CriarClienteCall();
   static GETQRCodeCall gETQRCodeCall = GETQRCodeCall();
   static GETStatusPixCall gETStatusPixCall = GETStatusPixCall();
+  static CancelarCobrancaCall cancelarCobrancaCall = CancelarCobrancaCall();
+}
+
+class CancelarCobrancaCall {
+  Future<ApiCallResponse> call({
+    String? id = '',
+  }) async {
+    final response = await makeCloudCall(
+      _kPrivateApiFunctionName,
+      {
+        'callName': 'CancelarCobrancaCall',
+        'variables': {
+          'id': id,
+        },
+      },
+    );
+    return ApiCallResponse.fromCloudCallResponse(response);
+  }
+
+  dynamic deleted(dynamic response) => getJsonField(
+        response,
+        r'''$.deleted''',
+      );
 }
 
 class CriarSubcontaFranquiaCall {

@@ -8,6 +8,7 @@ import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'checkout_model.dart';
 export 'checkout_model.dart';
 
@@ -1282,7 +1283,35 @@ class _ErrorDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 18.0),
+              const SizedBox(height: 12.0),
+              SizedBox(
+                height: 46,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await launchUrl(
+                        Uri.parse('https://wa.me/5511912751899'));
+                  },
+                  icon: Icon(Icons.support_agent, color: theme.primary),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: theme.primary,
+                    side: BorderSide(color: theme.alternate, width: 1.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  label: Text(
+                    'Chamar Suporte',
+                    style: theme.titleSmall.override(
+                      font: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                      fontSize: 14.0,
+                      fontWeight: FontWeight.w700,
+                      color: theme.primary,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10.0),
               SizedBox(
                 height: 46,
                 child: ElevatedButton(

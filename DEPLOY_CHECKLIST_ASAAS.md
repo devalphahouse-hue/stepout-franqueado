@@ -1,3 +1,5 @@
+> Atualização em 06/10/2026: as funções corrigidas e a migração de segurança já foram publicadas. O histórico abaixo descreve a implantação anterior. Consulte [a documentação atual de pagamentos](https://github.com/devalphahouse-hue/stepout-franqueado/blob/main/supabase/README.md) antes de executar seus passos.
+
 # Checklist de deploy — migração Asaas (stepout-franqueado)
 
 Documento de ação para Renan. As mudanças de **código e Edge Functions** já estão prontas. Falta executar os passos abaixo, na ordem indicada.
@@ -32,7 +34,7 @@ Se ainda não fez:
 1. Acessar **Asaas Sandbox Dashboard**: https://sandbox.asaas.com/
 2. Configurações → Integrações → Webhooks → Adicionar webhook
 3. URL: `https://qmfitknztvxvzpgjyvxf.supabase.co/functions/v1/asaas-webhook`
-4. Token de autenticação: `d660e7c4ddc5db903b8fc5dd51a133c101e6479684f7e6112b0743e95e0a9c29`
+4. Token de autenticação: `<ASAAS_WEBHOOK_TOKEN configurado no Supabase>`
 5. Marcar todos os eventos `PAYMENT_*`
 6. Salvar.
 

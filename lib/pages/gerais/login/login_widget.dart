@@ -1,22 +1,18 @@
 import '/auth/supabase_auth/auth_util.dart';
+import '/custom_code/franchise_payment_plan.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'login_model.dart';
 export 'login_model.dart';
 
-const _kInProgressStatuses = {
-  'PENDING',
-  'AWAITING_RISK_ANALYSIS',
-};
-const _kPaidStatuses = {
-  'CONFIRMED',
-  'RECEIVED',
-  'RECEIVED_IN_CASH',
-};
+const _kInProgressStatuses = {'PENDING', 'AWAITING_RISK_ANALYSIS'};
+const _kPaidStatuses = {'CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'};
 const _kFailedStatuses = {
   'OVERDUE',
   'REFUNDED',
@@ -141,11 +137,13 @@ class _LoginWidgetState extends State<LoginWidget> {
     final hasAsaasId = (pending.idCobrancaAsaas ?? '').trim().isNotEmpty;
 
     if (_kPaidStatuses.contains(status)) {
-      _goFranquiaInativa(motivo: 'aguardando_ativacao');
+      await _hydrateContratacaoStruct(pending);
+      _goFranquiaInativa(motivo: 'aguardando_ativacao', idCobranca: pending.id);
       return;
     }
     if (_kInProgressStatuses.contains(status) && hasAsaasId) {
-      _goFranquiaInativa(motivo: 'em_analise');
+      await _hydrateContratacaoStruct(pending);
+      _goFranquiaInativa(motivo: 'em_analise', idCobranca: pending.id);
       return;
     }
     if (_kFailedStatuses.contains(status)) {
@@ -162,6 +160,7 @@ class _LoginWidgetState extends State<LoginWidget> {
       context.mounted,
       queryParameters: {
         'idCobranca': serializeParam(pending.id, ParamType.String),
+        'indication': serializeParam(pending.indicacao, ParamType.String),
       }.withoutNulls,
       extra: <String, dynamic>{
         '__transition_info__': const TransitionInfo(
@@ -203,13 +202,6 @@ class _LoginWidgetState extends State<LoginWidget> {
     return rows.isEmpty ? null : rows.first;
   }
 
-  ({int parcelas, double valorParcela}) _planFromValor(double? valor) {
-    final v = valor ?? 0.0;
-    if (v >= 29000) return (parcelas: 12, valorParcela: 2500.0);
-    if (v >= 24000) return (parcelas: 6, valorParcela: 4167.0);
-    return (parcelas: 1, valorParcela: 20000.0);
-  }
-
   Future<void> _hydrateContratacaoStruct(CobrancasRow cob) async {
     final users = await UsersTable().queryRows(
       queryFn: (q) => q.eqOrNull('id', currentUserUid),
@@ -217,12 +209,14 @@ class _LoginWidgetState extends State<LoginWidget> {
     final user = users.firstOrNull;
     final franquia = _model.fraquiaativa?.firstOrNull;
 
-    final plan = _planFromValor(cob.valor);
+    final plan = FranchisePaymentPlan.restore(
+      total: cob.valor ?? 0,
+      installments: cob.numParcelas,
+      installment: cob.valorParcelas,
+    );
     final razao = (franquia?.razaoSocial ?? '').trim();
-    // CNPJ não é persistido em DB hoje, então tratamos sempre como Pessoa
-    // Física no relogin para o checkout usar user.cpf no criarClienteCall.
-    // Quando a captura de CNPJ for adicionada ao schema, voltar a respeitar
-    // razaoSocial pra distinguir PF/PJ.
+    // Base legada para retomar a tela. O checkout recupera CPF/CNPJ do perfil
+    // protegido no servidor antes de criar o cliente ou enviar o pagamento.
     const tipo = 'Pessoa Física';
 
     FFAppState().updateContratacaoFranquadoStruct(
@@ -241,10 +235,12 @@ class _LoginWidgetState extends State<LoginWidget> {
         ..razaoSocial = razao
         ..tipoCadastro = tipo
         ..idFranquiaCriada = franquia?.id ?? ''
-        ..valor = (cob.valor ?? 0) > 0 ? cob.valor : 20000.0
-        ..parcelas = plan.parcelas
-        ..valorParcela = plan.valorParcela
-        ..plano = (cob.valor ?? 20000.0).toDouble(),
+        ..valor = plan.total
+        ..parcelas = plan.installments
+        ..valorParcela = plan.installment
+        ..indication = cob.indicacao ?? ''
+        ..status = cob.statusCobranca ?? ''
+        ..idpagamentoAsaas = cob.idCobrancaAsaas ?? '',
     );
   }
 
@@ -293,7 +289,9 @@ class _LoginWidgetState extends State<LoginWidget> {
                   passwordFocusNode: _model.passwordFocusNode!,
                   passwordVisible: _model.passwordVisibility,
                   onTogglePassword: () => safeSetState(
-                      () => _model.passwordVisibility = !_model.passwordVisibility),
+                    () =>
+                        _model.passwordVisibility = !_model.passwordVisibility,
+                  ),
                   loading: _isSubmitting,
                   onLogin: _handleLogin,
                   onForgot: () =>
@@ -303,11 +301,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                   passwordValidator: _passwordValidator,
                 ),
               ),
-              if (showHero)
-                const Expanded(
-                  flex: 1,
-                  child: _LoginHeroPanel(),
-                ),
+              if (showHero) const Expanded(flex: 1, child: _LoginHeroPanel()),
             ],
           ),
         ),
@@ -418,7 +412,9 @@ class _LoginFormPanel extends StatelessWidget {
       child: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? 24.0 : 40.0, vertical: 32.0),
+            horizontal: isCompact ? 24.0 : 40.0,
+            vertical: 32.0,
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460.0),
             child: Form(
@@ -444,8 +440,7 @@ class _LoginFormPanel extends StatelessWidget {
                     'Portal do Franqueado',
                     textAlign: TextAlign.center,
                     style: theme.headlineMedium.override(
-                      font:
-                          GoogleFonts.interTight(fontWeight: FontWeight.w800),
+                      font: GoogleFonts.interTight(fontWeight: FontWeight.w800),
                       fontSize: isCompact ? 24.0 : 28.0,
                       fontWeight: FontWeight.w800,
                       color: theme.primaryText,
@@ -519,7 +514,9 @@ class _LoginFormPanel extends StatelessWidget {
                             style: TextButton.styleFrom(
                               foregroundColor: theme.primary,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0, vertical: 4.0),
+                                horizontal: 8.0,
+                                vertical: 4.0,
+                              ),
                               minimumSize: const Size(0, 32),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -527,7 +524,8 @@ class _LoginFormPanel extends StatelessWidget {
                               'Esqueceu sua senha?',
                               style: theme.bodyMedium.override(
                                 font: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w600),
+                                  fontWeight: FontWeight.w600,
+                                ),
                                 fontSize: 13.0,
                                 fontWeight: FontWeight.w600,
                                 color: theme.primary,
@@ -683,8 +681,10 @@ class _LoginField extends StatelessWidget {
               padding: const EdgeInsets.only(left: 14.0, right: 10.0),
               child: Icon(icon, color: theme.secondaryText, size: 20.0),
             ),
-            prefixIconConstraints:
-                const BoxConstraints(minWidth: 0, minHeight: 0),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
             suffixIcon: suffixIcon == null
                 ? null
                 : IconButton(
@@ -698,7 +698,9 @@ class _LoginField extends StatelessWidget {
             filled: true,
             fillColor: theme.secondaryBackground,
             contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14.0, vertical: 14.0),
+              horizontal: 14.0,
+              vertical: 14.0,
+            ),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: theme.alternate, width: 1.0),
               borderRadius: BorderRadius.circular(12.0),
@@ -745,9 +747,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     final base = theme.primary;
-    final bg = (_hovered || _pressed)
-        ? base.withValues(alpha: 0.88)
-        : base;
+    final bg = (_hovered || _pressed) ? base.withValues(alpha: 0.88) : base;
 
     return MouseRegion(
       cursor: widget.loading
@@ -912,7 +912,9 @@ class _LoginHeroPanel extends StatelessWidget {
           bottom: 32.0,
           child: Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: 18.0, vertical: 14.0),
+              horizontal: 18.0,
+              vertical: 14.0,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(16.0),
@@ -943,7 +945,8 @@ class _LoginHeroPanel extends StatelessWidget {
                         'Gestão completa em um lugar',
                         style: theme.titleSmall.override(
                           font: GoogleFonts.interTight(
-                              fontWeight: FontWeight.w700),
+                            fontWeight: FontWeight.w700,
+                          ),
                           fontSize: 14.0,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText,

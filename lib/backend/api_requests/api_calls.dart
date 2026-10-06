@@ -783,6 +783,7 @@ class CancelarCobrancaCall {
 
 class CriarSubcontaFranquiaCall {
   Future<ApiCallResponse> call({
+    String? idcobranca,
     String? nome = '',
     String? email = '',
     String? cpfcnpj = '',
@@ -799,6 +800,7 @@ class CriarSubcontaFranquiaCall {
       {
         'callName': 'CriarSubcontaFranquiaCall',
         'variables': {
+          'idcobranca': idcobranca,
           'nome': nome,
           'email': email,
           'cpfcnpj': cpfcnpj,

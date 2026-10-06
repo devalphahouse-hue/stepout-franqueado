@@ -1,22 +1,23 @@
 import '/auth/supabase_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
+import '/backend/cloud_functions/cloud_functions.dart';
+import '/custom_code/franchise_payment_plan.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:webviewx_plus/webviewx_plus.dart';
+
 import 'cadastro_franquia_model.dart';
 export 'cadastro_franquia_model.dart';
 
 class CadastroFranquiaWidget extends StatefulWidget {
-  const CadastroFranquiaWidget({
-    super.key,
-    this.indication,
-  });
+  const CadastroFranquiaWidget({super.key, this.indication});
 
   final String? indication;
 
@@ -54,13 +55,13 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
 
     _model.textFieldTelefoneTextController ??= TextEditingController();
     _model.textFieldTelefoneFocusNode ??= FocusNode();
-    _model.textFieldTelefoneMask =
-        MaskTextInputFormatter(mask: '(##) #####-####');
+    _model.textFieldTelefoneMask = MaskTextInputFormatter(
+      mask: '(##) #####-####',
+    );
 
     _model.textFieldCPFTextController1 ??= TextEditingController();
     _model.textFieldCPFFocusNode1 ??= FocusNode();
-    _model.textFieldCPFMask1 =
-        MaskTextInputFormatter(mask: '###.###.###-##');
+    _model.textFieldCPFMask1 = MaskTextInputFormatter(mask: '###.###.###-##');
 
     _model.textFieldDNascTextController ??= TextEditingController();
     _model.textFieldDNascFocusNode ??= FocusNode();
@@ -96,8 +97,7 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
 
     _model.textFieldCPFTextController2 ??= TextEditingController();
     _model.textFieldCPFFocusNode2 ??= FocusNode();
-    _model.textFieldCPFMask2 =
-        MaskTextInputFormatter(mask: '###.###.###-##');
+    _model.textFieldCPFMask2 = MaskTextInputFormatter(mask: '###.###.###-##');
 
     _model.textFieldCPFTextController3 ??= TextEditingController();
     _model.textFieldCPFFocusNode3 ??= FocusNode();
@@ -125,7 +125,9 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
       const Duration(milliseconds: 700),
       () async {
         if (!mounted) return;
-        if (_model.textController7.text.replaceAll(RegExp(r'[^0-9]'), '').length <
+        if (_model.textController7.text
+                .replaceAll(RegExp(r'[^0-9]'), '')
+                .length <
             8) {
           return;
         }
@@ -154,7 +156,9 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
               builder: (alertDialogContext) {
                 return WebViewAware(
                   child: AlertDialog(
-                    content: Text((_model.resultCEP?.jsonBody ?? '').toString()),
+                    content: Text(
+                      (_model.resultCEP?.jsonBody ?? '').toString(),
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(alertDialogContext),
@@ -192,7 +196,12 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
     if (!value.contains(RegExp(r'[A-Z]'))) return 'Inclua uma letra maiúscula.';
     if (!value.contains(RegExp(r'[a-z]'))) return 'Inclua uma letra minúscula.';
     if (!value.contains(RegExp(r'[0-9]'))) return 'Inclua um número.';
-    if (!value.contains(RegExp(r'[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:''\\|,.<>\/?]'))) {
+    if (!value.contains(
+      RegExp(
+        r'[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:'
+        '\\|,.<>\/?]',
+      ),
+    )) {
       return 'Inclua um caractere especial.';
     }
     return null;
@@ -212,7 +221,12 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
     if (value.contains(RegExp(r'[A-Z]'))) score++;
     if (value.contains(RegExp(r'[a-z]'))) score++;
     if (value.contains(RegExp(r'[0-9]'))) score++;
-    if (value.contains(RegExp(r'[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:''\\|,.<>\/?]'))) {
+    if (value.contains(
+      RegExp(
+        r'[!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:'
+        '\\|,.<>\/?]',
+      ),
+    )) {
       score++;
     }
     return score;
@@ -229,11 +243,16 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
 
     safeSetState(() => _submitting = true);
     try {
+      FranchisePaymentPlan.restore(
+        total: FFAppState().contratacaoFranquado.valor,
+        installments: FFAppState().contratacaoFranquado.parcelas,
+        installment: FFAppState().contratacaoFranquado.valorParcela,
+      );
       FFAppState().updateContratacaoFranquadoStruct(
         (e) => e
           ..nomeResponsavel = _model.textFieldNomeTextController1.text
           ..emailResponsavel = _model.textFieldEmailTextController.text
-          ..senha = _model.textFieldSenhaTextController.text
+          ..senha = ''
           ..cep = _model.textController7.text
           ..endereco = _model.textFieldEnderecoTextController.text
           ..bairro = _model.textFieldBairroTextController.text
@@ -291,7 +310,8 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
         'razao_social': _model.textFieldNomeTextController2.text,
         'status_franquia': false,
         'user_responsavel': _model.novoRowUser?.id,
-        'id-indicacao': (FFAppState().contratacaoFranquado.indication != null &&
+        'id-indicacao':
+            (FFAppState().contratacaoFranquado.indication != null &&
                 FFAppState().contratacaoFranquado.indication != '')
             ? FFAppState().contratacaoFranquado.indication
             : null,
@@ -313,19 +333,59 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
         'valor': FFAppState().contratacaoFranquado.valor,
         'user_id': _model.novoRowUser?.id,
         'tipo_cobranca': 'franquia',
+        'if_franquia': _model.novoRowFranquia?.id,
+        'num_parcelas': FFAppState().contratacaoFranquado.parcelas,
+        'valor_parcelas': FFAppState().contratacaoFranquado.valorParcela,
+        'indicacao': widget.indication?.isNotEmpty == true
+            ? widget.indication
+            : null,
       });
+
+      final profile = ApiCallResponse.fromCloudCallResponse(
+        await makeCloudCall('asaas-proxy', {
+          'callName': 'SalvarContextoPagamentoCall',
+          'variables': {
+            'idcobranca': _model.idCobranca?.id,
+            'cpfcnpj': _model.dropDownValue == 'Pessoa Jurídica'
+                ? _model.textFieldCPFTextController3.text
+                : _model.textFieldCPFTextController1.text,
+            'tipoempresa': _model.dropDownValue == 'Pessoa Jurídica'
+                ? 'LIMITED'
+                : '',
+          },
+        }),
+      );
+      if (!profile.succeeded) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Cadastro criado. Confira os dados para concluir o pagamento.',
+            ),
+          ),
+        );
+        return;
+      }
 
       if (!mounted) return;
       context.pushNamedAuth(
         CheckoutWidget.routeName,
         context.mounted,
         queryParameters: {
-          'idCobranca':
-              serializeParam(_model.idCobranca?.id, ParamType.String),
-          'indication':
-              serializeParam(widget.indication, ParamType.String),
+          'idCobranca': serializeParam(_model.idCobranca?.id, ParamType.String),
+          'indication': serializeParam(widget.indication, ParamType.String),
         }.withoutNulls,
       );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível concluir. Entre com sua conta para retomar o cadastro.',
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) safeSetState(() => _submitting = false);
     }
@@ -379,154 +439,182 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                flex: 2,
-                                child: _LabeledField(
-                                  label: 'Nome completo',
-                                  hint: 'Seu nome',
-                                  icon: Icons.badge_outlined,
-                                  controller:
-                                      _model.textFieldNomeTextController1!,
-                                  focusNode: _model.textFieldNomeFocusNode1!,
-                                  validator: (v) => _required(v, 'seu nome'),
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  flex: 2,
+                                  child: _LabeledField(
+                                    label: 'Nome completo',
+                                    hint: 'Seu nome',
+                                    icon: Icons.badge_outlined,
+                                    controller:
+                                        _model.textFieldNomeTextController1!,
+                                    focusNode: _model.textFieldNomeFocusNode1!,
+                                    validator: (v) => _required(v, 'seu nome'),
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                             const SizedBox(height: 8.0),
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                flex: 2,
-                                child: _LabeledField(
-                                  label: 'E-mail',
-                                  hint: 'voce@exemplo.com',
-                                  icon: Icons.email_outlined,
-                                  keyboardType: TextInputType.emailAddress,
-                                  controller:
-                                      _model.textFieldEmailTextController!,
-                                  focusNode: _model.textFieldEmailFocusNode!,
-                                  validator: _emailValidator,
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  flex: 2,
+                                  child: _LabeledField(
+                                    label: 'E-mail',
+                                    hint: 'voce@exemplo.com',
+                                    icon: Icons.email_outlined,
+                                    keyboardType: TextInputType.emailAddress,
+                                    controller:
+                                        _model.textFieldEmailTextController!,
+                                    focusNode: _model.textFieldEmailFocusNode!,
+                                    validator: _emailValidator,
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                             const SizedBox(height: 8.0),
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _LabeledField(
-                                      label: 'Senha',
-                                      hint: 'Mínimo 8 caracteres',
-                                      icon: Icons.lock_outline_rounded,
-                                      controller:
-                                          _model.textFieldSenhaTextController!,
-                                      focusNode:
-                                          _model.textFieldSenhaFocusNode!,
-                                      validator: _passwordValidator,
-                                      obscureText:
-                                          !_model.textFieldSenhaVisibility,
-                                      suffixIcon:
-                                          _model.textFieldSenhaVisibility
-                                              ? Icons.visibility_off_outlined
-                                              : Icons.visibility_outlined,
-                                      onSuffixTap: () => safeSetState(() =>
-                                          _model.textFieldSenhaVisibility =
-                                              !_model.textFieldSenhaVisibility),
-                                      onChanged: (_) => safeSetState(() {}),
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _LabeledField(
+                                        label: 'Senha',
+                                        hint: 'Mínimo 8 caracteres',
+                                        icon: Icons.lock_outline_rounded,
+                                        controller: _model
+                                            .textFieldSenhaTextController!,
+                                        focusNode:
+                                            _model.textFieldSenhaFocusNode!,
+                                        validator: _passwordValidator,
+                                        obscureText:
+                                            !_model.textFieldSenhaVisibility,
+                                        suffixIcon:
+                                            _model.textFieldSenhaVisibility
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                        onSuffixTap: () => safeSetState(
+                                          () =>
+                                              _model.textFieldSenhaVisibility =
+                                                  !_model
+                                                      .textFieldSenhaVisibility,
+                                        ),
+                                        onChanged: (_) => safeSetState(() {}),
+                                      ),
+                                      const SizedBox(height: 6.0),
+                                      _PasswordStrength(
+                                        score: _passwordScore(
+                                          _model
+                                              .textFieldSenhaTextController
+                                              .text,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'Confirme sua senha',
+                                    hint: 'Repita a senha',
+                                    icon: Icons.lock_outline_rounded,
+                                    controller: _model
+                                        .textFieldSenhaConfTextController!,
+                                    focusNode:
+                                        _model.textFieldSenhaConfFocusNode!,
+                                    validator: _confirmPasswordValidator,
+                                    obscureText:
+                                        !_model.textFieldSenhaConfVisibility,
+                                    suffixIcon:
+                                        _model.textFieldSenhaConfVisibility
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    onSuffixTap: () => safeSetState(
+                                      () =>
+                                          _model.textFieldSenhaConfVisibility =
+                                              !_model
+                                                  .textFieldSenhaConfVisibility,
                                     ),
-                                    const SizedBox(height: 6.0),
-                                    _PasswordStrength(
-                                      score: _passwordScore(_model
-                                          .textFieldSenhaTextController.text),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'Confirme sua senha',
-                                  hint: 'Repita a senha',
-                                  icon: Icons.lock_outline_rounded,
-                                  controller: _model
-                                      .textFieldSenhaConfTextController!,
-                                  focusNode:
-                                      _model.textFieldSenhaConfFocusNode!,
-                                  validator: _confirmPasswordValidator,
-                                  obscureText:
-                                      !_model.textFieldSenhaConfVisibility,
-                                  suffixIcon:
-                                      _model.textFieldSenhaConfVisibility
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
-                                  onSuffixTap: () => safeSetState(() => _model
-                                          .textFieldSenhaConfVisibility =
-                                      !_model.textFieldSenhaConfVisibility),
-                                ),
-                              ),
-                            ]),
+                              ],
+                            ),
                             const SizedBox(height: 8.0),
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'Telefone',
-                                  hint: '(00) 00000-0000',
-                                  icon: Icons.phone_iphone_rounded,
-                                  keyboardType: TextInputType.phone,
-                                  controller: _model
-                                      .textFieldTelefoneTextController!,
-                                  focusNode:
-                                      _model.textFieldTelefoneFocusNode!,
-                                  inputFormatters: [_model.textFieldTelefoneMask],
-                                  validator: (v) =>
-                                      _required(v, 'seu telefone'),
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'Telefone',
+                                    hint: '(00) 00000-0000',
+                                    icon: Icons.phone_iphone_rounded,
+                                    keyboardType: TextInputType.phone,
+                                    controller:
+                                        _model.textFieldTelefoneTextController!,
+                                    focusNode:
+                                        _model.textFieldTelefoneFocusNode!,
+                                    inputFormatters: [
+                                      _model.textFieldTelefoneMask,
+                                    ],
+                                    validator: (v) =>
+                                        _required(v, 'seu telefone'),
+                                  ),
                                 ),
-                              ),
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'CPF',
-                                  hint: '000.000.000-00',
-                                  icon: Icons.credit_card_outlined,
-                                  keyboardType: TextInputType.number,
-                                  controller:
-                                      _model.textFieldCPFTextController1!,
-                                  focusNode: _model.textFieldCPFFocusNode1!,
-                                  inputFormatters: [_model.textFieldCPFMask1],
-                                  validator: (v) => _required(v, 'seu CPF'),
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'CPF',
+                                    hint: '000.000.000-00',
+                                    icon: Icons.credit_card_outlined,
+                                    keyboardType: TextInputType.number,
+                                    controller:
+                                        _model.textFieldCPFTextController1!,
+                                    focusNode: _model.textFieldCPFFocusNode1!,
+                                    inputFormatters: [_model.textFieldCPFMask1],
+                                    validator: (v) => _required(v, 'seu CPF'),
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                             const SizedBox(height: 8.0),
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'Data de nascimento',
-                                  hint: 'DD/MM/AAAA',
-                                  icon: Icons.calendar_today_outlined,
-                                  keyboardType: TextInputType.datetime,
-                                  controller:
-                                      _model.textFieldDNascTextController!,
-                                  focusNode: _model.textFieldDNascFocusNode!,
-                                  inputFormatters: [_model.textFieldDNascMask],
-                                  validator: (v) => _required(v,
-                                      'sua data de nascimento'),
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'Data de nascimento',
+                                    hint: 'DD/MM/AAAA',
+                                    icon: Icons.calendar_today_outlined,
+                                    keyboardType: TextInputType.datetime,
+                                    controller:
+                                        _model.textFieldDNascTextController!,
+                                    focusNode: _model.textFieldDNascFocusNode!,
+                                    inputFormatters: [
+                                      _model.textFieldDNascMask,
+                                    ],
+                                    validator: (v) =>
+                                        _required(v, 'sua data de nascimento'),
+                                  ),
                                 ),
-                              ),
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'Nacionalidade',
-                                  hint: 'Brasileira',
-                                  icon: Icons.public_rounded,
-                                  controller:
-                                      _model.textFieldNocionTextController!,
-                                  focusNode: _model.textFieldNocionFocusNode!,
-                                  validator: (v) =>
-                                      _required(v, 'sua nacionalidade'),
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'Nacionalidade',
+                                    hint: 'Brasileira',
+                                    icon: Icons.public_rounded,
+                                    controller:
+                                        _model.textFieldNocionTextController!,
+                                    focusNode: _model.textFieldNocionFocusNode!,
+                                    validator: (v) =>
+                                        _required(v, 'sua nacionalidade'),
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -539,111 +627,124 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'CEP',
-                                  hint: '00000-000',
-                                  icon: Icons.search_rounded,
-                                  controller: _model.textController7!,
-                                  focusNode: _model.textFieldFocusNode!,
-                                  inputFormatters: [_model.textFieldMask],
-                                  onChanged: _onCepChanged,
-                                  keyboardType: TextInputType.number,
-                                  trailing: _loadingCep
-                                      ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.2,
-                                          ),
-                                        )
-                                      : null,
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'CEP',
+                                    hint: '00000-000',
+                                    icon: Icons.search_rounded,
+                                    controller: _model.textController7!,
+                                    focusNode: _model.textFieldFocusNode!,
+                                    inputFormatters: [_model.textFieldMask],
+                                    onChanged: _onCepChanged,
+                                    keyboardType: TextInputType.number,
+                                    trailing: _loadingCep
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.2,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
                                 ),
-                              ),
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'País',
-                                  hint: 'Brasil',
-                                  icon: Icons.flag_outlined,
-                                  controller:
-                                      _model.textFieldPaisTextController!,
-                                  focusNode: _model.textFieldPaisFocusNode!,
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'País',
+                                    hint: 'Brasil',
+                                    icon: Icons.flag_outlined,
+                                    controller:
+                                        _model.textFieldPaisTextController!,
+                                    focusNode: _model.textFieldPaisFocusNode!,
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                             const SizedBox(height: 8.0),
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                flex: 2,
-                                child: _LabeledField(
-                                  label: 'Endereço',
-                                  hint: 'Rua, avenida...',
-                                  icon: Icons.home_outlined,
-                                  controller:
-                                      _model.textFieldEnderecoTextController!,
-                                  focusNode: _model.textFieldEnderecoFocusNode!,
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  flex: 2,
+                                  child: _LabeledField(
+                                    label: 'Endereço',
+                                    hint: 'Rua, avenida...',
+                                    icon: Icons.home_outlined,
+                                    controller:
+                                        _model.textFieldEnderecoTextController!,
+                                    focusNode:
+                                        _model.textFieldEnderecoFocusNode!,
+                                  ),
                                 ),
-                              ),
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'Bairro',
-                                  hint: 'Bairro',
-                                  icon: Icons.signpost_outlined,
-                                  controller:
-                                      _model.textFieldBairroTextController!,
-                                  focusNode: _model.textFieldBairroFocusNode!,
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'Bairro',
+                                    hint: 'Bairro',
+                                    icon: Icons.signpost_outlined,
+                                    controller:
+                                        _model.textFieldBairroTextController!,
+                                    focusNode: _model.textFieldBairroFocusNode!,
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                             const SizedBox(height: 8.0),
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'Número',
-                                  hint: 'Nº',
-                                  icon: Icons.numbers_rounded,
-                                  controller:
-                                      _model.textFieldNumeroTextController!,
-                                  focusNode: _model.textFieldNumeroFocusNode!,
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'Número',
+                                    hint: 'Nº',
+                                    icon: Icons.numbers_rounded,
+                                    controller:
+                                        _model.textFieldNumeroTextController!,
+                                    focusNode: _model.textFieldNumeroFocusNode!,
+                                  ),
                                 ),
-                              ),
-                              _Field(
-                                flex: 2,
-                                child: _LabeledField(
-                                  label: 'Complemento',
-                                  hint: 'Sala, apto...',
-                                  icon: Icons.note_alt_outlined,
-                                  controller:
-                                      _model.textFieldCompleTextController!,
-                                  focusNode: _model.textFieldCompleFocusNode!,
+                                _Field(
+                                  flex: 2,
+                                  child: _LabeledField(
+                                    label: 'Complemento',
+                                    hint: 'Sala, apto...',
+                                    icon: Icons.note_alt_outlined,
+                                    controller:
+                                        _model.textFieldCompleTextController!,
+                                    focusNode: _model.textFieldCompleFocusNode!,
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                             const SizedBox(height: 8.0),
-                            _FieldRow(isCompact: isCompact, children: [
-                              _Field(
-                                flex: 2,
-                                child: _LabeledField(
-                                  label: 'Cidade',
-                                  hint: 'Cidade',
-                                  icon: Icons.location_city_outlined,
-                                  controller:
-                                      _model.textFieldCidadeTextController!,
-                                  focusNode: _model.textFieldCidadeFocusNode!,
+                            _FieldRow(
+                              isCompact: isCompact,
+                              children: [
+                                _Field(
+                                  flex: 2,
+                                  child: _LabeledField(
+                                    label: 'Cidade',
+                                    hint: 'Cidade',
+                                    icon: Icons.location_city_outlined,
+                                    controller:
+                                        _model.textFieldCidadeTextController!,
+                                    focusNode: _model.textFieldCidadeFocusNode!,
+                                  ),
                                 ),
-                              ),
-                              _Field(
-                                child: _LabeledField(
-                                  label: 'UF',
-                                  hint: 'UF',
-                                  icon: Icons.map_outlined,
-                                  controller:
-                                      _model.textFieldUFTextController!,
-                                  focusNode: _model.textFieldUFFocusNode!,
+                                _Field(
+                                  child: _LabeledField(
+                                    label: 'UF',
+                                    hint: 'UF',
+                                    icon: Icons.map_outlined,
+                                    controller:
+                                        _model.textFieldUFTextController!,
+                                    focusNode: _model.textFieldUFFocusNode!,
+                                  ),
                                 ),
-                              ),
-                            ]),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -668,12 +769,10 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
                                 hint: '000.000.000-00',
                                 icon: Icons.credit_card_outlined,
                                 keyboardType: TextInputType.number,
-                                controller:
-                                    _model.textFieldCPFTextController2!,
+                                controller: _model.textFieldCPFTextController2!,
                                 focusNode: _model.textFieldCPFFocusNode2!,
                                 inputFormatters: [_model.textFieldCPFMask2],
-                                validator: (v) =>
-                                    _required(v, 'o CPF'),
+                                validator: (v) => _required(v, 'o CPF'),
                               )
                             else ...[
                               _LabeledField(
@@ -681,8 +780,7 @@ class _CadastroFranquiaWidgetState extends State<CadastroFranquiaWidget> {
                                 hint: '00.000.000/0000-00',
                                 icon: Icons.business_outlined,
                                 keyboardType: TextInputType.number,
-                                controller:
-                                    _model.textFieldCPFTextController3!,
+                                controller: _model.textFieldCPFTextController3!,
                                 focusNode: _model.textFieldCPFFocusNode3!,
                                 validator: (v) => _required(v, 'o CNPJ'),
                               ),
@@ -822,8 +920,11 @@ class _BackPillState extends State<_BackPill> {
             border: Border.all(color: theme.alternate, width: 1.0),
           ),
           alignment: Alignment.center,
-          child: Icon(Icons.arrow_back_rounded,
-              color: theme.primaryText, size: 20.0),
+          child: Icon(
+            Icons.arrow_back_rounded,
+            color: theme.primaryText,
+            size: 20.0,
+          ),
         ),
       ),
     );
@@ -886,7 +987,8 @@ class _SectionCard extends StatelessWidget {
                       title,
                       style: theme.titleMedium.override(
                         font: GoogleFonts.interTight(
-                            fontWeight: FontWeight.w700),
+                          fontWeight: FontWeight.w700,
+                        ),
                         fontSize: 15.5,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText,
@@ -1054,13 +1156,17 @@ class _LabeledField extends StatelessWidget {
               padding: const EdgeInsets.only(left: 14.0, right: 10.0),
               child: Icon(icon, color: theme.secondaryText, size: 20.0),
             ),
-            prefixIconConstraints:
-                const BoxConstraints(minWidth: 0, minHeight: 0),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
             suffixIcon: builtSuffix,
             filled: true,
             fillColor: theme.secondaryBackground,
             contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14.0, vertical: 14.0),
+              horizontal: 14.0,
+              vertical: 14.0,
+            ),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: theme.alternate, width: 1.0),
               borderRadius: BorderRadius.circular(12.0),
@@ -1141,9 +1247,7 @@ class _PasswordStrength extends StatelessWidget {
           Row(
             children: [
               Icon(
-                score >= 5
-                    ? Icons.shield_rounded
-                    : Icons.info_outline_rounded,
+                score >= 5 ? Icons.shield_rounded : Icons.info_outline_rounded,
                 size: 12,
                 color: color,
               ),
@@ -1238,9 +1342,11 @@ class _ToggleOption extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon,
-                  size: 16,
-                  color: selected ? Colors.white : theme.secondaryText),
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? Colors.white : theme.secondaryText,
+              ),
               const SizedBox(width: 6.0),
               Text(
                 label,
@@ -1283,13 +1389,12 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     final base = theme.primary;
-    final bg = (_hovered || _pressed)
-        ? base.withValues(alpha: 0.88)
-        : base;
+    final bg = (_hovered || _pressed) ? base.withValues(alpha: 0.88) : base;
 
     return MouseRegion(
-      cursor:
-          widget.loading ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      cursor: widget.loading
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() {
         _hovered = false;
@@ -1332,8 +1437,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                     height: 18.0,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.4,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   ),
                   const SizedBox(width: 10.0),
@@ -1350,8 +1454,11 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                 ),
                 if (!widget.loading) ...[
                   const SizedBox(width: 8.0),
-                  const Icon(Icons.arrow_forward_rounded,
-                      size: 18, color: Colors.white),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
                 ],
               ],
             ),

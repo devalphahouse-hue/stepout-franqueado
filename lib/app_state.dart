@@ -34,6 +34,8 @@ class FFAppState extends ChangeNotifier {
           _contratacaoFranquado =
               ContratacaoFranqueadoStruct.fromSerializableMap(
                   jsonDecode(serializedData));
+          _contratacaoFranquado.senha = '';
+          prefs.setString('ff_contratacaoFranquado', _contratacaoFranquado.serialize());
         } catch (e) {
           print("Can't decode persisted data type. Error: $e.");
         }
@@ -206,6 +208,7 @@ class FFAppState extends ChangeNotifier {
       ContratacaoFranqueadoStruct();
   ContratacaoFranqueadoStruct get contratacaoFranquado => _contratacaoFranquado;
   set contratacaoFranquado(ContratacaoFranqueadoStruct value) {
+    value.senha = '';
     _contratacaoFranquado = value;
     prefs.setString('ff_contratacaoFranquado', value.serialize());
   }
@@ -213,6 +216,7 @@ class FFAppState extends ChangeNotifier {
   void updateContratacaoFranquadoStruct(
       Function(ContratacaoFranqueadoStruct) updateFn) {
     updateFn(_contratacaoFranquado);
+    _contratacaoFranquado.senha = '';
     prefs.setString(
         'ff_contratacaoFranquado', _contratacaoFranquado.serialize());
   }

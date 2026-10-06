@@ -1,23 +1,23 @@
 import 'dart:convert';
 
 import '/backend/api_requests/api_calls.dart';
+import '/backend/cloud_functions/cloud_functions.dart';
+import '/custom_code/franchise_payment_plan.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'checkout_model.dart';
 export 'checkout_model.dart';
 
 class CheckoutWidget extends StatefulWidget {
-  const CheckoutWidget({
-    super.key,
-    this.indication,
-    required this.idCobranca,
-  });
+  const CheckoutWidget({super.key, this.indication, required this.idCobranca});
 
   final String? indication;
   final String? idCobranca;
@@ -35,6 +35,8 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final _formKey = GlobalKey<FormState>();
   bool _processing = false;
+  bool _invoiceReady = false;
+  String _paymentId = '';
 
   @override
   void initState() {
@@ -42,7 +44,8 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
     _model = createModel(context, () => CheckoutModel());
 
     _model.textController1 ??= TextEditingController(
-        text: FFAppState().contratacaoFranquado.copiaecola);
+      text: FFAppState().contratacaoFranquado.copiaecola,
+    );
     _model.textFieldFocusNode ??= FocusNode();
 
     _model.txNomecartTextController ??= TextEditingController();
@@ -50,8 +53,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
 
     _model.txNumcartTextController ??= TextEditingController();
     _model.txNumcartFocusNode ??= FocusNode();
-    _model.txNumcartMask =
-        MaskTextInputFormatter(mask: '#### #### #### ####');
+    _model.txNumcartMask = MaskTextInputFormatter(mask: '#### #### #### ####');
 
     _model.txMesTextController ??= TextEditingController();
     _model.txMesFocusNode ??= FocusNode();
@@ -68,7 +70,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
     _model.txCpfTextController ??= TextEditingController();
     _model.txCpfFocusNode ??= FocusNode();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadInvoice());
   }
 
   @override
@@ -81,14 +83,16 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
     if (valor == null) return 'R\$ 0,00';
     final s = valor.toStringAsFixed(2).replaceAll('.', ',');
     final parts = s.split(',');
-    final integer = parts[0]
-        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+    final integer = parts[0].replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
     return 'R\$ $integer,${parts[1]}';
   }
 
   List<String> _parseAsaasErrors(String? body) {
     final fallback = [
-      'Não foi possível processar o pagamento. Verifique os dados do cartão e tente novamente.'
+      'Não foi possível processar o pagamento. Verifique os dados do cartão e tente novamente.',
     ];
     if (body == null || body.trim().isEmpty) return fallback;
     try {
@@ -128,20 +132,163 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
     return null;
   }
 
-  Future<void> _onPay() async {
-    if (_processing) return;
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+  Future<ApiCallResponse> _privateCall(
+    String name,
+    Map<String, dynamic> input,
+  ) async {
+    return ApiCallResponse.fromCloudCallResponse(
+      await makeCloudCall('asaas-proxy', {
+        'callName': name,
+        'variables': input,
+      }),
+    );
+  }
 
+  Future<void> _loadInvoice() async {
+    try {
+      final id = widget.idCobranca;
+      if (id == null || id.isEmpty)
+        throw const FormatException('Cobrança não informada.');
+      final rows = await CobrancasTable().queryRows(
+        queryFn: (q) => q.eq('id', id),
+      );
+      if (rows.isEmpty) throw const FormatException('Cobrança não encontrada.');
+      final invoice = rows.first;
+      final plan = FranchisePaymentPlan.restore(
+        total: invoice.valor ?? 0,
+        installments: invoice.numParcelas,
+        installment: invoice.valorParcelas,
+      );
+      _paymentId = invoice.idCobrancaAsaas ?? '';
+      FFAppState().updateContratacaoFranquadoStruct(
+        (state) => state
+          ..valor = plan.total
+          ..parcelas = plan.installments
+          ..valorParcela = plan.installment
+          ..indication = invoice.indicacao ?? ''
+          ..idFranquiaCriada = invoice.ifFranquia ?? ''
+          ..idpagamentoAsaas = _paymentId
+          ..status = invoice.statusCobranca ?? '',
+      );
+      var contextResponse = await _privateCall(
+        'ConsultarContextoPagamentoCall',
+        {'idcobranca': id},
+      );
+      if (!contextResponse.succeeded)
+        throw const FormatException('Não foi possível recuperar o cadastro.');
+      // Older invoices predate the protected profile. Reuse their existing
+      // registration data without substituting documents or birth dates.
+      if (getJsonField(contextResponse.jsonBody, r'$.profile') == null) {
+        final state = FFAppState().contratacaoFranquado;
+        final saved = await _privateCall('SalvarContextoPagamentoCall', {
+          'idcobranca': id,
+          'cpfcnpj': state.tipoCadastro == 'Pessoa Jurídica'
+              ? state.cnpjConta
+              : state.cpfResponsavel,
+        });
+        if (!saved.succeeded)
+          throw const FormatException('Confira os dados do cadastro.');
+        contextResponse = await _privateCall(
+          'ConsultarContextoPagamentoCall',
+          {'idcobranca': id},
+        );
+        if (!contextResponse.succeeded)
+          throw const FormatException('Não foi possível recuperar o cadastro.');
+      }
+      final profile = getJsonField(contextResponse.jsonBody, r'$.profile');
+      if (profile is Map) {
+        final document = (profile['cpfCnpj'] ?? '').toString();
+        FFAppState().updateContratacaoFranquadoStruct(
+          (state) => state
+            ..tipoCadastro =
+                document.length == 14 ? 'Pessoa Jurídica' : 'Pessoa Física'
+            ..cnpjConta = document.length == 14 ? document : ''
+            ..cpfResponsavel = document.length == 11 ? document : ''
+            ..nomeResponsavel = (profile['name'] ?? '').toString()
+            ..razaoSocial = (profile['name'] ?? '').toString()
+            ..emailResponsavel = (profile['email'] ?? '').toString()
+            ..telefone = (profile['mobilePhone'] ?? '').toString()
+            ..cep = (profile['postalCode'] ?? '').toString()
+            ..endereco = (profile['address'] ?? '').toString()
+            ..numero = (profile['addressNumber'] ?? '').toString()
+            ..bairro = (profile['province'] ?? '').toString(),
+        );
+      }
+      if (mounted) safeSetState(() => _invoiceReady = true);
+    } catch (_) {
+      await _showErrorsDialog(
+        title: 'Não foi possível abrir o pagamento',
+        errors: const [
+          'Reabra a cobrança pelo login. Nenhum pagamento foi realizado.',
+        ],
+      );
+    }
+  }
+
+  Future<void> _completeActivation() async {
+    final response = await _privateCall('CriarSubcontaFranquiaCall', {
+      'idcobranca': widget.idCobranca,
+    });
+    if (!response.succeeded) {
+      await _showErrorsDialog(
+        title: 'Pagamento aprovado, ativação pendente',
+        errors: _parseAsaasErrors(response.bodyText),
+      );
+      return;
+    }
+    if (!mounted) return;
+    FFAppState().idfranquia =
+        FFAppState().contratacaoFranquado.idFranquiaCriada;
+    context.pushNamed(CompraConfirmadaWidget.routeName);
+  }
+
+  Future<void> _onPay() async {
+    if (_processing || !_invoiceReady) return;
     safeSetState(() => _processing = true);
     try {
+      // Always reconcile first, including after a timeout or browser reload.
+      final existing = await _privateCall('ConsultarPagamentoCall', {
+        'idcobranca': widget.idCobranca,
+      });
+      if (!existing.succeeded) {
+        await _showErrorsDialog(
+          title: 'Consulte o pagamento',
+          errors: _parseAsaasErrors(existing.bodyText),
+        );
+        return;
+      }
+      final existingId =
+          getJsonField(existing.jsonBody, r'$.id')?.toString() ?? '';
+      final existingStatus =
+          getJsonField(existing.jsonBody, r'$.status')?.toString() ?? '';
+      if (existingId.isNotEmpty) {
+        _paymentId = existingId;
+        safeSetState(() {});
+        if (const {
+          'CONFIRMED',
+          'RECEIVED',
+          'RECEIVED_IN_CASH',
+        }.contains(existingStatus)) {
+          await _completeActivation();
+        } else {
+          await _showErrorsDialog(
+            title: 'Pagamento já enviado',
+            errors: const [
+              'O pagamento já foi enviado. Aguarde a confirmação ou entre em contato com o suporte. Nenhuma nova cobrança foi feita.',
+            ],
+          );
+        }
+        return;
+      }
+      if (!(_formKey.currentState?.validate() ?? false)) return;
+      final state = FFAppState().contratacaoFranquado;
       _model.apiResult5t0 = await AsaasGroup.criarClienteCall.call(
-        nome: FFAppState().contratacaoFranquado.nomeResponsavel,
-        cpf: FFAppState().contratacaoFranquado.tipoCadastro == 'Pessoa Física'
-            ? FFAppState().contratacaoFranquado.cpfResponsavel
-            : FFAppState().contratacaoFranquado.cnpjConta,
-        email: FFAppState().contratacaoFranquado.emailResponsavel,
+        nome: state.nomeResponsavel,
+        cpf: state.tipoCadastro == 'Pessoa Física'
+            ? state.cpfResponsavel
+            : state.cnpjConta,
+        email: state.emailResponsavel,
       );
-
       if (!(_model.apiResult5t0?.succeeded ?? false)) {
         await _showErrorsDialog(
           title: 'Não conseguimos criar o cadastro',
@@ -149,185 +296,78 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
         );
         return;
       }
-
-      final hasIndication =
-          widget.indication != null && widget.indication!.isNotEmpty;
-
-      ApiCallResponse? cobResp;
-
-      if (hasIndication) {
-        _model.franquiaIndicadora = await FranquiasTable().queryRows(
-          queryFn: (q) => q.eqOrNull('id', widget.indication),
-        );
-        _model.ipCliente = await BuscarIPCall.call();
-
-        _model.apiCobCARTSplit =
-            await AsaasGroup.criarCobrancaCartaoComSplitCall.call(
-          clienteid: AsaasGroup.criarClienteCall
-              .idcliente(_model.apiResult5t0?.jsonBody ?? ''),
-          valortotal: FFAppState().contratacaoFranquado.valor,
-          datacobranca: dateTimeFormat(
-            'yyyy-M-dd',
-            getCurrentTimestamp,
-            locale: FFLocalizations.of(context).languageCode,
+      _model.ipCliente = await BuscarIPCall.call();
+      if (!mounted) return;
+      final hasIndication = state.indication.isNotEmpty;
+      // Splits and authoritative amounts are resolved from the stored invoice
+      // by the server. No client-supplied wallet controls the destination.
+      final payment = await _privateCall(
+        hasIndication
+            ? 'CriarCobrancaCartaoComSplitCall'
+            : 'CriarCobrancaCartaoSemSplitCall',
+        {
+          'idcobranca': widget.idCobranca,
+          'clienteid': AsaasGroup.criarClienteCall.idcliente(
+            _model.apiResult5t0?.jsonBody ?? '',
           ),
-          valorsplit: 50.0,
-          walletIndicacao:
-              _model.franquiaIndicadora?.firstOrNull?.walletId,
-          nomecartao: _model.txNomecartTextController.text,
-          numerocartao: _model.txNumcartTextController.text,
-          mesexpiracao: _model.txMesTextController.text,
-          anoexpira: _model.txAnoTextController.text,
-          cvv: _model.txCvvTextController.text,
-          ip: BuscarIPCall.ip(_model.ipCliente?.jsonBody ?? '').toString(),
-          nome: FFAppState().contratacaoFranquado.nomeResponsavel,
-          email: FFAppState().contratacaoFranquado.emailResponsavel,
-          cpf: _model.txCpfTextController.text,
-          telefone: FFAppState().contratacaoFranquado.telefone,
-          cep: FFAppState().contratacaoFranquado.cep,
-          endereco: FFAppState().contratacaoFranquado.endereco,
-          numero: FFAppState().contratacaoFranquado.numero,
-          bairro: FFAppState().contratacaoFranquado.bairro,
-          parcelas: FFAppState().contratacaoFranquado.parcelas,
-          valorParcela: FFAppState().contratacaoFranquado.valorParcela,
-          idcobranca: widget.idCobranca,
-        );
-        cobResp = _model.apiCobCARTSplit;
-      } else {
-        _model.ipClienteSIMPL = await BuscarIPCall.call();
-
-        _model.apiCobCARTSemSplit =
-            await AsaasGroup.criarCobrancaCartaoSemSplitCall.call(
-          clienteid: AsaasGroup.criarClienteCall
-              .idcliente(_model.apiResult5t0?.jsonBody ?? ''),
-          valortotal: FFAppState().contratacaoFranquado.valor,
-          datacobranca: dateTimeFormat(
-            'yyyy-M-dd',
-            getCurrentTimestamp,
-            locale: FFLocalizations.of(context).languageCode,
-          ),
-          nomecartao: _model.txNomecartTextController.text,
-          numerocartao: _model.txNumcartTextController.text,
-          mesexpiracao: _model.txMesTextController.text,
-          anoexpira: _model.txAnoTextController.text,
-          cvv: _model.txCvvTextController.text,
-          ip: BuscarIPCall.ip(_model.ipClienteSIMPL?.jsonBody ?? '')
-              .toString(),
-          nome: FFAppState().contratacaoFranquado.nomeResponsavel,
-          email: FFAppState().contratacaoFranquado.emailResponsavel,
-          cpf: _model.txCpfTextController.text,
-          telefone: FFAppState().contratacaoFranquado.telefone,
-          cep: FFAppState().contratacaoFranquado.cep,
-          endereco: FFAppState().contratacaoFranquado.endereco,
-          numero: FFAppState().contratacaoFranquado.numero,
-          bairro: FFAppState().contratacaoFranquado.bairro,
-          parcelas: FFAppState().contratacaoFranquado.parcelas,
-          valorParcela: FFAppState().contratacaoFranquado.valorParcela,
-          idcobranca: widget.idCobranca,
-        );
-        cobResp = _model.apiCobCARTSemSplit;
-      }
-
-      if (!(cobResp?.succeeded ?? false)) {
+          'valortotal': state.valor,
+          'parcelas': state.parcelas,
+          'valorParcela': state.valorParcela,
+          'datacobranca': dateTimeFormat('yyyy-MM-dd', getCurrentTimestamp),
+          'nomecartao': _model.txNomecartTextController.text,
+          'numerocartao': _model.txNumcartTextController.text,
+          'mesexpiracao': _model.txMesTextController.text,
+          'anoexpira': _model.txAnoTextController.text,
+          'cvv': _model.txCvvTextController.text,
+          'ip': BuscarIPCall.ip(_model.ipCliente?.jsonBody ?? '').toString(),
+          'email': state.emailResponsavel,
+          'cpf': _model.txCpfTextController.text,
+          'telefone': state.telefone,
+          'cep': state.cep,
+          'endereco': state.endereco,
+          'numero': state.numero,
+        },
+      );
+      if (!payment.succeeded) {
         await _showErrorsDialog(
-          title: 'Não conseguimos processar o pagamento',
-          errors: _parseAsaasErrors(cobResp?.bodyText),
+          title: 'Não conseguimos concluir o pagamento',
+          errors: _parseAsaasErrors(payment.bodyText),
         );
         return;
       }
-
-      final body = cobResp?.jsonBody ?? '';
-      final status = hasIndication
-          ? AsaasGroup.criarCobrancaCartaoComSplitCall.statuspix(body)
-          : AsaasGroup.criarCobrancaCartaoSemSplitCall.statuspix(body);
-      final idPagamento = hasIndication
-          ? AsaasGroup.criarCobrancaCartaoComSplitCall.idpagamento(body)
-          : AsaasGroup.criarCobrancaCartaoSemSplitCall.idpagamento(body);
-
+      _paymentId = getJsonField(payment.jsonBody, r'$.id')?.toString() ?? '';
+      final status =
+          getJsonField(payment.jsonBody, r'$.status')?.toString() ?? '';
       FFAppState().updateContratacaoFranquadoStruct(
-        (e) => e..status = status?.toString() ?? '',
+        (state) => state
+          ..idpagamentoAsaas = _paymentId
+          ..status = status,
       );
+      // Clear card fields immediately. A subsequent click only reconciles.
+      _model.txNumcartTextController?.clear();
+      _model.txCvvTextController?.clear();
       safeSetState(() {});
-
-      final isApproved = FFAppState().contratacaoFranquado.status ==
-              'CONFIRMED' ||
-          FFAppState().contratacaoFranquado.status == 'RECEIVED';
-
-      if (!isApproved) {
+      if (const {
+        'CONFIRMED',
+        'RECEIVED',
+        'RECEIVED_IN_CASH',
+      }.contains(status)) {
+        await _completeActivation();
+      } else {
         await _showErrorsDialog(
-          title: 'Pagamento não aprovado',
+          title: 'Pagamento em processamento',
           errors: const [
-            'Revise os dados do cartão e tente novamente. Se o problema persistir, entre em contato com a sua operadora.'
+            'Aguarde a confirmação. Use “Consultar pagamento” para verificar o resultado sem pagar novamente.',
           ],
         );
-        return;
       }
-
-      await FranquiasTable().update(
-        data: {'status_franquia': true},
-        matchingRows: (rows) => rows.eqOrNull(
-          'id',
-          FFAppState().contratacaoFranquado.idFranquiaCriada,
-        ),
+    } catch (_) {
+      await _showErrorsDialog(
+        title: 'Resultado do pagamento pendente',
+        errors: const [
+          'Não foi possível confirmar o resultado. Consulte novamente antes de tentar outro pagamento.',
+        ],
       );
-      await CobrancasTable().update(
-        data: {
-          'forma_pagamento': 'Cartão',
-          'status_cobranca': status?.toString() ?? '',
-          'id_cobranca_asaas': idPagamento?.toString() ?? '',
-        },
-        matchingRows: (rows) => rows.eqOrNull('id', widget.idCobranca),
-      );
-
-      final subResp = await AsaasGroup.criarSubcontaFranquiaCall.call(
-        nome: FFAppState().contratacaoFranquado.tipoCadastro == 'Pessoa Física'
-            ? FFAppState().contratacaoFranquado.nomeResponsavel
-            : FFAppState().contratacaoFranquado.razaoSocial,
-        email: FFAppState().contratacaoFranquado.emailResponsavel,
-        cpfcnpj: FFAppState().contratacaoFranquado.tipoCadastro ==
-                'Pessoa Física'
-            ? FFAppState().contratacaoFranquado.cpfResponsavel
-            : FFAppState().contratacaoFranquado.cnpjConta,
-        telefone: FFAppState().contratacaoFranquado.telefone,
-        endereco: FFAppState().contratacaoFranquado.endereco,
-        numero: FFAppState().contratacaoFranquado.numero,
-        bairro: FFAppState().contratacaoFranquado.bairro,
-        cep: FFAppState().contratacaoFranquado.cep,
-        tipoempresa:
-            FFAppState().contratacaoFranquado.tipoCadastro == 'Pessoa Física'
-                ? 'Física'
-                : 'LIMITED',
-      );
-      if (hasIndication) {
-        _model.subConta1 = subResp;
-      } else {
-        _model.subConta2 = subResp;
-      }
-
-      if (!(subResp.succeeded)) {
-        await _showErrorsDialog(
-          title: 'Pagamento aprovado, ativação pendente',
-          errors: _parseAsaasErrors(subResp.bodyText),
-        );
-        return;
-      }
-
-      await FranquiasTable().update(
-        data: {
-          'wallet_id': AsaasGroup.criarSubcontaFranquiaCall
-              .walletid(subResp.jsonBody ?? ''),
-        },
-        matchingRows: (rows) => rows.eqOrNull(
-          'id',
-          FFAppState().contratacaoFranquado.idFranquiaCriada,
-        ),
-      );
-      FFAppState().idfranquia =
-          FFAppState().contratacaoFranquado.idFranquiaCriada;
-      safeSetState(() {});
-
-      if (!mounted) return;
-      context.pushNamed(CompraConfirmadaWidget.routeName);
     } finally {
       if (mounted) safeSetState(() => _processing = false);
     }
@@ -372,7 +412,8 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                   formKey: _formKey,
                   onBack: _onBack,
                   onPay: _onPay,
-                  processing: _processing,
+                  processing: _processing || !_invoiceReady,
+                  paymentSubmitted: _paymentId.isNotEmpty,
                   valor: valor,
                   parcelas: parcelas,
                   valorParcela: valorParcela,
@@ -383,10 +424,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
                 ),
               ),
               if (showHero)
-                const Expanded(
-                  flex: 1,
-                  child: _CheckoutHeroPanel(),
-                ),
+                const Expanded(flex: 1, child: _CheckoutHeroPanel()),
             ],
           ),
         ),
@@ -402,6 +440,7 @@ class _CheckoutFormPanel extends StatelessWidget {
     required this.onBack,
     required this.onPay,
     required this.processing,
+    required this.paymentSubmitted,
     required this.valor,
     required this.parcelas,
     required this.valorParcela,
@@ -416,6 +455,7 @@ class _CheckoutFormPanel extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onPay;
   final bool processing;
+  final bool paymentSubmitted;
   final double? valor;
   final int? parcelas;
   final double? valorParcela;
@@ -458,7 +498,8 @@ class _CheckoutFormPanel extends StatelessWidget {
                               'Pagamento',
                               style: theme.headlineMedium.override(
                                 font: GoogleFonts.interTight(
-                                    fontWeight: FontWeight.w800),
+                                  fontWeight: FontWeight.w800,
+                                ),
                                 fontSize: 24.0,
                                 fontWeight: FontWeight.w800,
                                 color: theme.primaryText,
@@ -494,13 +535,14 @@ class _CheckoutFormPanel extends StatelessWidget {
                     title: 'Forma de pagamento',
                     subtitle: 'Pagamento seguro processado pela Asaas.',
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.primary.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(12.0),
-                        border:
-                            Border.all(color: theme.primary, width: 1.4),
+                        border: Border.all(color: theme.primary, width: 1.4),
                       ),
                       child: Row(
                         children: [
@@ -512,8 +554,11 @@ class _CheckoutFormPanel extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             alignment: Alignment.center,
-                            child: const Icon(Icons.credit_card_rounded,
-                                color: Colors.white, size: 18),
+                            child: const Icon(
+                              Icons.credit_card_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -525,7 +570,8 @@ class _CheckoutFormPanel extends StatelessWidget {
                                   'Cartão de crédito',
                                   style: theme.titleSmall.override(
                                     font: GoogleFonts.interTight(
-                                        fontWeight: FontWeight.w700),
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                     color: theme.primaryText,
@@ -545,8 +591,11 @@ class _CheckoutFormPanel extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Icon(Icons.check_circle_rounded,
-                              color: theme.primary, size: 20),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: theme.primary,
+                            size: 20,
+                          ),
                         ],
                       ),
                     ),
@@ -660,10 +709,12 @@ class _CheckoutFormPanel extends StatelessWidget {
                           controller: model.txCpfTextController!,
                           focusNode: model.txCpfFocusNode!,
                           keyboardType: TextInputType.number,
-                          validator: (v) => required(v,
-                              tipoCadastro == 'Pessoa Jurídica'
-                                  ? 'o CNPJ'
-                                  : 'o CPF'),
+                          validator: (v) => required(
+                            v,
+                            tipoCadastro == 'Pessoa Jurídica'
+                                ? 'o CNPJ'
+                                : 'o CPF',
+                          ),
                         ),
                       ],
                     ),
@@ -672,7 +723,9 @@ class _CheckoutFormPanel extends StatelessWidget {
                   _PrimaryButton(
                     label: processing
                         ? 'Processando…'
-                        : 'Pagar ${formatBRL(valor)}',
+                        : paymentSubmitted
+                            ? 'Consultar pagamento'
+                            : 'Pagar ${formatBRL(valor)}',
                     loading: processing,
                     onTap: onPay,
                     icon: Icons.lock_rounded,
@@ -682,8 +735,11 @@ class _CheckoutFormPanel extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.verified_user_outlined,
-                            size: 14, color: theme.secondaryText),
+                        Icon(
+                          Icons.verified_user_outlined,
+                          size: 14,
+                          color: theme.secondaryText,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'Pagamento processado com criptografia ponta a ponta.',
@@ -732,10 +788,7 @@ class _ResumoCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            theme.primary,
-            theme.primary.withValues(alpha: 0.85),
-          ],
+          colors: [theme.primary, theme.primary.withValues(alpha: 0.85)],
         ),
         borderRadius: BorderRadius.circular(18.0),
         boxShadow: [
@@ -752,8 +805,7 @@ class _ResumoCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(999),
@@ -761,8 +813,11 @@ class _ResumoCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.workspace_premium_rounded,
-                        size: 12, color: Colors.white),
+                    const Icon(
+                      Icons.workspace_premium_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'CONTRATAÇÃO DE FRANQUIA',
@@ -809,8 +864,11 @@ class _ResumoCard extends StatelessWidget {
           const SizedBox(height: 12.0),
           Row(
             children: [
-              const Icon(Icons.account_balance_outlined,
-                  color: Colors.white, size: 16),
+              const Icon(
+                Icons.account_balance_outlined,
+                color: Colors.white,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -866,8 +924,11 @@ class _BackPillState extends State<_BackPill> {
             border: Border.all(color: theme.alternate, width: 1.0),
           ),
           alignment: Alignment.center,
-          child: Icon(Icons.arrow_back_rounded,
-              color: theme.primaryText, size: 20.0),
+          child: Icon(
+            Icons.arrow_back_rounded,
+            color: theme.primaryText,
+            size: 20.0,
+          ),
         ),
       ),
     );
@@ -930,7 +991,8 @@ class _SectionCard extends StatelessWidget {
                       title,
                       style: theme.titleMedium.override(
                         font: GoogleFonts.interTight(
-                            fontWeight: FontWeight.w700),
+                          fontWeight: FontWeight.w700,
+                        ),
                         fontSize: 15.5,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText,
@@ -1042,12 +1104,16 @@ class _LabeledField extends StatelessWidget {
               padding: const EdgeInsets.only(left: 14.0, right: 10.0),
               child: Icon(icon, color: theme.secondaryText, size: 20.0),
             ),
-            prefixIconConstraints:
-                const BoxConstraints(minWidth: 0, minHeight: 0),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
             filled: true,
             fillColor: theme.secondaryBackground,
             contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14.0, vertical: 14.0),
+              horizontal: 14.0,
+              vertical: 14.0,
+            ),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(color: theme.alternate, width: 1.0),
               borderRadius: BorderRadius.circular(12.0),
@@ -1096,14 +1162,11 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     final base = theme.primary;
-    final bg = (_hovered || _pressed)
-        ? base.withValues(alpha: 0.88)
-        : base;
+    final bg = (_hovered || _pressed) ? base.withValues(alpha: 0.88) : base;
 
     return MouseRegion(
-      cursor: widget.loading
-          ? SystemMouseCursors.basic
-          : SystemMouseCursors.click,
+      cursor:
+          widget.loading ? SystemMouseCursors.basic : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() {
         _hovered = false;
@@ -1146,8 +1209,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                     height: 18.0,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.4,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
                 else if (widget.icon != null)
@@ -1216,8 +1278,11 @@ class _ErrorDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
-                    child: Icon(Icons.error_outline_rounded,
-                        color: theme.error, size: 22),
+                    child: Icon(
+                      Icons.error_outline_rounded,
+                      color: theme.error,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1225,7 +1290,8 @@ class _ErrorDialog extends StatelessWidget {
                       title,
                       style: theme.titleMedium.override(
                         font: GoogleFonts.interTight(
-                            fontWeight: FontWeight.w700),
+                          fontWeight: FontWeight.w700,
+                        ),
                         fontSize: 16.0,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText,
@@ -1277,8 +1343,7 @@ class _ErrorDialog extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (i != errors.length - 1)
-                        const SizedBox(height: 8.0),
+                      if (i != errors.length - 1) const SizedBox(height: 8.0),
                     ],
                   ],
                 ),
@@ -1288,8 +1353,7 @@ class _ErrorDialog extends StatelessWidget {
                 height: 46,
                 child: OutlinedButton.icon(
                   onPressed: () async {
-                    await launchUrl(
-                        Uri.parse('https://wa.me/5511912751899'));
+                    await launchUrl(Uri.parse('https://wa.me/5511912751899'));
                   },
                   icon: Icon(Icons.support_agent, color: theme.primary),
                   style: OutlinedButton.styleFrom(
@@ -1372,7 +1436,9 @@ class _CheckoutHeroPanel extends StatelessWidget {
           bottom: 32.0,
           child: Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: 18.0, vertical: 14.0),
+              horizontal: 18.0,
+              vertical: 14.0,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(16.0),
@@ -1403,7 +1469,8 @@ class _CheckoutHeroPanel extends StatelessWidget {
                         'Pagamento 100% seguro',
                         style: theme.titleSmall.override(
                           font: GoogleFonts.interTight(
-                              fontWeight: FontWeight.w700),
+                            fontWeight: FontWeight.w700,
+                          ),
                           fontSize: 14.0,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText,

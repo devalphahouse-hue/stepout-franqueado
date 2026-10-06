@@ -1,16 +1,15 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'planos_model.dart';
 export 'planos_model.dart';
 
 class PlanosWidget extends StatefulWidget {
-  const PlanosWidget({
-    super.key,
-    this.indication,
-  });
+  const PlanosWidget({super.key, this.indication});
 
   final String? indication;
 
@@ -30,13 +29,14 @@ class _PlanosWidgetState extends State<PlanosWidget> {
   // de verdade. Ativado por long-press no selo "Torne-se franqueado" + código.
   static const String _demoCode = 'stepout-demo';
   bool _demoProd = false;
+  final _demoController = TextEditingController();
 
   Future<void> _promptDemoProd() async {
     if (_demoProd) {
       setState(() => _demoProd = false);
       return;
     }
-    final controller = TextEditingController();
+    final controller = _demoController..clear();
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -62,8 +62,9 @@ class _PlanosWidgetState extends State<PlanosWidget> {
                   labelText: 'Código de acesso',
                   border: OutlineInputBorder(),
                 ),
-                onSubmitted: (_) => Navigator.of(dialogContext)
-                    .pop(controller.text.trim() == _demoCode),
+                onSubmitted: (_) =>
+                    Navigator.of(dialogContext)
+                        .pop(controller.text.trim() == _demoCode),
               ),
             ],
           ),
@@ -73,8 +74,9 @@ class _PlanosWidgetState extends State<PlanosWidget> {
               child: const Text('Cancelar'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(dialogContext)
-                  .pop(controller.text.trim() == _demoCode),
+              onPressed: () =>
+                  Navigator.of(dialogContext)
+                      .pop(controller.text.trim() == _demoCode),
               child: const Text('Ativar'),
             ),
           ],
@@ -82,14 +84,12 @@ class _PlanosWidgetState extends State<PlanosWidget> {
       },
     );
     final typedSomething = controller.text.trim().isNotEmpty;
-    controller.dispose();
     if (!mounted) return;
     if (ok == true) {
       setState(() => _demoProd = true);
     } else if (ok == false && typedSomething) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Código incorreto.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Código incorreto.')));
     }
   }
 
@@ -102,6 +102,7 @@ class _PlanosWidgetState extends State<PlanosWidget> {
 
   @override
   void dispose() {
+    _demoController.dispose();
     _model.dispose();
     super.dispose();
   }
@@ -112,16 +113,13 @@ class _PlanosWidgetState extends State<PlanosWidget> {
         ..plano = plan.planoIdx
         ..valor = plan.totalValor
         ..parcelas = plan.parcelas
-        ..valorParcela = plan.valorParcela,
+        ..valorParcela = plan.valorParcela
+        ..indication = widget.indication ?? ''
+        ..status = ''
+        ..idpagamentoAsaas = '',
     );
     safeSetState(() {});
     final indication = widget.indication;
-    if (indication != null && indication.isNotEmpty) {
-      FFAppState().updateContratacaoFranquadoStruct(
-        (e) => e..indication = indication,
-      );
-      safeSetState(() {});
-    }
     context.pushNamed(
       CadastroFranquiaWidget.routeName,
       queryParameters: {
@@ -190,12 +188,12 @@ class _PlanosWidgetState extends State<PlanosWidget> {
             const _PlanSpec(
               planoIdx: 2.0,
               title: '6 parcelas',
-              subtitle: 'Sem juros, no boleto ou cartão.',
-              priceLabel: '6x de R\$ 4.167',
+              subtitle: 'Pagamento parcelado no cartão.',
+              priceLabel: '6x de aproximadamente R\$ 4.166,67',
               installmentsLabel: 'Total R\$ 25.000,00',
               totalValor: 25000.0,
               parcelas: 6,
-              valorParcela: 4167.0,
+              valorParcela: 25000.0 / 6,
             ),
             const _PlanSpec(
               planoIdx: 3.0,
@@ -231,11 +229,7 @@ class _PlanosWidgetState extends State<PlanosWidget> {
                   onDemoGesture: _promptDemoProd,
                 ),
               ),
-              if (showHero)
-                const Expanded(
-                  flex: 1,
-                  child: _PlanosHeroPanel(),
-                ),
+              if (showHero) const Expanded(flex: 1, child: _PlanosHeroPanel()),
             ],
           ),
         ),
@@ -296,7 +290,9 @@ class _PlanosFormPanel extends StatelessWidget {
       child: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? 24.0 : 40.0, vertical: 32.0),
+            horizontal: isCompact ? 24.0 : 40.0,
+            vertical: 32.0,
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480.0),
             child: Column(
@@ -308,7 +304,9 @@ class _PlanosFormPanel extends StatelessWidget {
                     onLongPress: onDemoGesture,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12.0, vertical: 6.0),
+                        horizontal: 12.0,
+                        vertical: 6.0,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(999),
@@ -316,14 +314,18 @@ class _PlanosFormPanel extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.workspace_premium_rounded,
-                              size: 14, color: theme.primary),
+                          Icon(
+                            Icons.workspace_premium_rounded,
+                            size: 14,
+                            color: theme.primary,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'Torne-se franqueado',
                             style: theme.labelMedium.override(
                               font: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w700),
+                                fontWeight: FontWeight.w700,
+                              ),
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                               color: theme.primary,
@@ -365,7 +367,9 @@ class _PlanosFormPanel extends StatelessWidget {
                     onTap: onDemoGesture,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14.0, vertical: 10.0),
+                        horizontal: 14.0,
+                        vertical: 10.0,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.warning.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12.0),
@@ -373,8 +377,11 @@ class _PlanosFormPanel extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.science_rounded,
-                              size: 18, color: theme.warning),
+                          Icon(
+                            Icons.science_rounded,
+                            size: 18,
+                            color: theme.warning,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -382,7 +389,8 @@ class _PlanosFormPanel extends StatelessWidget {
                               'para teste real. Toque aqui para desativar.',
                               style: theme.labelMedium.override(
                                 font: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w700),
+                                  fontWeight: FontWeight.w700,
+                                ),
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
                                 color: theme.warning,
@@ -399,10 +407,7 @@ class _PlanosFormPanel extends StatelessWidget {
                 ...plans.map(
                   (p) => Padding(
                     padding: const EdgeInsets.only(bottom: 12.0),
-                    child: _PlanCard(
-                      plan: p,
-                      onContratar: () => onSelect(p),
-                    ),
+                    child: _PlanCard(plan: p, onContratar: () => onSelect(p)),
                   ),
                 ),
                 const SizedBox(height: 20.0),
@@ -476,8 +481,7 @@ class _PlanCardState extends State<_PlanCard> {
                   child: Text(
                     widget.plan.title,
                     style: theme.titleMedium.override(
-                      font: GoogleFonts.interTight(
-                          fontWeight: FontWeight.w700),
+                      font: GoogleFonts.interTight(fontWeight: FontWeight.w700),
                       fontSize: 16.0,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText,
@@ -512,8 +516,11 @@ class _PlanCardState extends State<_PlanCard> {
             const SizedBox(height: 4.0),
             Row(
               children: [
-                Icon(Icons.payments_outlined,
-                    size: 14, color: theme.secondaryText),
+                Icon(
+                  Icons.payments_outlined,
+                  size: 14,
+                  color: theme.secondaryText,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   widget.plan.installmentsLabel,
@@ -530,7 +537,9 @@ class _PlanCardState extends State<_PlanCard> {
               const SizedBox(height: 8.0),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10.0, vertical: 4.0),
+                  horizontal: 10.0,
+                  vertical: 4.0,
+                ),
                 decoration: BoxDecoration(
                   color: theme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(999),
@@ -538,8 +547,7 @@ class _PlanCardState extends State<_PlanCard> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.savings_rounded,
-                        size: 13, color: theme.primary),
+                    Icon(Icons.savings_rounded, size: 13, color: theme.primary),
                     const SizedBox(width: 4),
                     Text(
                       widget.plan.savings!,
@@ -556,10 +564,7 @@ class _PlanCardState extends State<_PlanCard> {
               ),
             ],
             const SizedBox(height: 16.0),
-            _ContratarButton(
-              onTap: widget.onContratar,
-              filled: highlighted,
-            ),
+            _ContratarButton(onTap: widget.onContratar, filled: highlighted),
           ],
         ),
       ),
@@ -799,7 +804,9 @@ class _PlanosHeroPanel extends StatelessWidget {
           bottom: 32.0,
           child: Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: 18.0, vertical: 14.0),
+              horizontal: 18.0,
+              vertical: 14.0,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(16.0),
@@ -830,7 +837,8 @@ class _PlanosHeroPanel extends StatelessWidget {
                         'Comece sua jornada Step Out',
                         style: theme.titleSmall.override(
                           font: GoogleFonts.interTight(
-                              fontWeight: FontWeight.w700),
+                            fontWeight: FontWeight.w700,
+                          ),
                           fontSize: 14.0,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText,

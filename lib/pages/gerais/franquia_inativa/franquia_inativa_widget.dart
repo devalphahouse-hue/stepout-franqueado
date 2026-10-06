@@ -2,8 +2,10 @@ import '/auth/supabase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'franquia_inativa_model.dart';
 export 'franquia_inativa_model.dart';
 
@@ -23,11 +25,7 @@ _Motivo _parseMotivo(String? raw) {
 }
 
 class FranquiaInativaWidget extends StatefulWidget {
-  const FranquiaInativaWidget({
-    super.key,
-    this.motivo,
-    this.idCobranca,
-  });
+  const FranquiaInativaWidget({super.key, this.motivo, this.idCobranca});
 
   final String? motivo;
   final String? idCobranca;
@@ -78,6 +76,10 @@ class _FranquiaInativaWidgetState extends State<FranquiaInativaWidget> {
       CheckoutWidget.routeName,
       queryParameters: {
         'idCobranca': serializeParam(id, ParamType.String),
+        'indication': serializeParam(
+          FFAppState().contratacaoFranquado.indication,
+          ParamType.String,
+        ),
       }.withoutNulls,
     );
   }
@@ -89,7 +91,9 @@ class _FranquiaInativaWidgetState extends State<FranquiaInativaWidget> {
     final isCompact = width < kBreakpointSmall;
     final motivo = _parseMotivo(widget.motivo);
     final v = _variantFor(motivo, theme);
-    final canRetry = motivo == _Motivo.pagamentoFalhou &&
+    final canRetry = (motivo == _Motivo.pagamentoFalhou ||
+            motivo == _Motivo.aguardandoAtivacao ||
+            motivo == _Motivo.emAnalise) &&
         (widget.idCobranca?.isNotEmpty ?? false);
 
     return GestureDetector(
@@ -104,7 +108,9 @@ class _FranquiaInativaWidgetState extends State<FranquiaInativaWidget> {
           child: Center(
             child: SingleChildScrollView(
               padding: EdgeInsets.symmetric(
-                  horizontal: isCompact ? 16.0 : 32.0, vertical: 32.0),
+                horizontal: isCompact ? 16.0 : 32.0,
+                vertical: 32.0,
+              ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520.0),
                 child: Column(
@@ -120,11 +126,7 @@ class _FranquiaInativaWidgetState extends State<FranquiaInativaWidget> {
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
-                        child: Icon(
-                          v.heroIcon,
-                          color: v.heroColor,
-                          size: 44.0,
-                        ),
+                        child: Icon(v.heroIcon, color: v.heroColor, size: 44.0),
                       ),
                     ),
                     const SizedBox(height: 18.0),
@@ -133,7 +135,8 @@ class _FranquiaInativaWidgetState extends State<FranquiaInativaWidget> {
                       textAlign: TextAlign.center,
                       style: theme.headlineMedium.override(
                         font: GoogleFonts.interTight(
-                            fontWeight: FontWeight.w800),
+                          fontWeight: FontWeight.w800,
+                        ),
                         fontSize: isCompact ? 22.0 : 26.0,
                         fontWeight: FontWeight.w800,
                         color: theme.primaryText,
@@ -158,8 +161,7 @@ class _FranquiaInativaWidgetState extends State<FranquiaInativaWidget> {
                       decoration: BoxDecoration(
                         color: theme.primaryBackground,
                         borderRadius: BorderRadius.circular(18.0),
-                        border:
-                            Border.all(color: theme.alternate, width: 1.0),
+                        border: Border.all(color: theme.alternate, width: 1.0),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.04),
@@ -188,7 +190,9 @@ class _FranquiaInativaWidgetState extends State<FranquiaInativaWidget> {
                     const SizedBox(height: 22.0),
                     if (canRetry) ...[
                       _PrimaryButton(
-                        label: 'Tentar pagamento novamente',
+                        label: motivo == _Motivo.pagamentoFalhou
+                            ? 'Retomar pagamento'
+                            : 'Consultar pagamento',
                         loading: false,
                         icon: Icons.refresh_rounded,
                         onTap: _retryCheckout,
@@ -383,8 +387,7 @@ class _Reason extends StatelessWidget {
                 Text(
                   title,
                   style: theme.titleSmall.override(
-                    font:
-                        GoogleFonts.interTight(fontWeight: FontWeight.w700),
+                    font: GoogleFonts.interTight(fontWeight: FontWeight.w700),
                     fontSize: 14.0,
                     fontWeight: FontWeight.w700,
                     color: theme.primaryText,
@@ -496,7 +499,8 @@ class _SupportCardState extends State<_SupportCard> {
                           'Falar com o suporte',
                           style: theme.titleSmall.override(
                             font: GoogleFonts.interTight(
-                                fontWeight: FontWeight.w700),
+                              fontWeight: FontWeight.w700,
+                            ),
                             fontSize: 14.0,
                             fontWeight: FontWeight.w700,
                             color: theme.primaryText,
@@ -516,8 +520,11 @@ class _SupportCardState extends State<_SupportCard> {
                       ],
                     ),
                   ),
-                  Icon(Icons.arrow_forward_rounded,
-                      color: theme.primary, size: 18.0),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: theme.primary,
+                    size: 18.0,
+                  ),
                 ],
               ),
             ),
@@ -553,14 +560,11 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     final base = theme.primary;
-    final bg = (_hovered || _pressed)
-        ? base.withValues(alpha: 0.88)
-        : base;
+    final bg = (_hovered || _pressed) ? base.withValues(alpha: 0.88) : base;
 
     return MouseRegion(
-      cursor: widget.loading
-          ? SystemMouseCursors.basic
-          : SystemMouseCursors.click,
+      cursor:
+          widget.loading ? SystemMouseCursors.basic : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() {
         _hovered = false;
@@ -603,8 +607,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
                     height: 18.0,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.4,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
                 else if (widget.icon != null)
@@ -654,9 +657,8 @@ class _SecondaryGhostButtonState extends State<_SecondaryGhostButton> {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     return MouseRegion(
-      cursor: widget.loading
-          ? SystemMouseCursors.basic
-          : SystemMouseCursors.click,
+      cursor:
+          widget.loading ? SystemMouseCursors.basic : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
       child: AnimatedContainer(
@@ -683,8 +685,7 @@ class _SecondaryGhostButtonState extends State<_SecondaryGhostButton> {
                     height: 16.0,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(theme.primary),
+                      valueColor: AlwaysStoppedAnimation<Color>(theme.primary),
                     ),
                   )
                 else
@@ -693,8 +694,7 @@ class _SecondaryGhostButtonState extends State<_SecondaryGhostButton> {
                 Text(
                   widget.label,
                   style: theme.titleSmall.override(
-                    font: GoogleFonts.interTight(
-                        fontWeight: FontWeight.w600),
+                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
                     fontSize: 14.0,
                     fontWeight: FontWeight.w600,
                     color: theme.primary,

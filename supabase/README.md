@@ -1,5 +1,13 @@
 # Correções do pagamento
 
+## Exclusão de aluno — 19/10/2026
+
+A função compartilhada `delete-user` v5 e a migração `20261019190000_student_deletion` corrigem o login remanescente após excluir aluno. O acesso Auth é removido primeiro; cadastro e metadados são desativados em transação, preservando histórico e cobranças. Falhas não são apresentadas como sucesso e a operação pode ser retomada. Ver `functions/delete-user/README.md`.
+
+Foram aprovados 20 testes de exclusão e os 42 testes existentes de pagamento. As telas de exclusão do franqueado e administrador foram atualizadas para usar o servidor.
+
+## Pagamentos — 06/10/2026
+
 Fontes das funções `asaas-proxy` e `asaas-webhook`. Em 06/10/2026, a migração `20261006150000_payment_safety` foi aplicada e registrada no projeto `qmfitknztvxvzpgjyvxf`. As versões finais publicadas conjuntamente são `asaas-proxy` v14 e `asaas-webhook` v8, preservando suas configurações de JWT e a indicação/split dos clientes antigos.
 
 As telas corrigidas estão incluídas nesta revisão. Confirmar a publicação dos aplicativos antes do teste com o cliente. Nenhuma cobrança real foi realizada nesta validação; o teste completo com o provedor continua pendente.

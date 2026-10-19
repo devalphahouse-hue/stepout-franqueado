@@ -36,3 +36,5 @@ History uses short Portuguese descriptions and scoped `fix:`/`feat:` messages. U
 ## Payment & Configuration Rules
 
 Preserve prices, split percentages, and student validity rules. Keep reduced demo prices until client validation authorizes removal. Demo amounts can create real charges. Never persist passwords or commit private keys or webhook tokens. Publish compatible functions and migrations before dependent app changes.
+
+Student deletion must call `delete-user`: remove Auth first, then finalize both soft-delete markers through `finalize_student_deletion`. Preserve history and allow retries; never report success after a failed Auth removal or database finalization.

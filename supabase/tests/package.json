@@ -1,5 +1,5 @@
 {
   "private": true,
-  "scripts": { "test": "node payments.test.cjs" },
+  "scripts": { "test": "node payments.test.cjs && node student-deletion.test.cjs" },
   "devDependencies": { "@electric-sql/pglite": "0.5.8" }
 }

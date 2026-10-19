@@ -341,21 +341,29 @@ class _DetalhesAlunoWidgetState extends State<DetalhesAlunoWidget> {
           },
         ) ??
         false;
-    if (!confirm) return;
+    if (!confirm || !mounted) return;
     safeSetState(() => _deleting = true);
     try {
-      final now = DateTime.now().toUtc().toIso8601String();
-      await MetaAlunosTable().update(
-        data: {'deleted_at': now},
-        matchingRows: (rows) =>
-            rows.eqOrNull('user_id', widget.idaluno),
+      final response = await Supabase.instance.client.functions.invoke(
+        'delete-user',
+        body: {'userId': widget.idaluno, 'expectedRole': 'aluno'},
       );
-      await UsersTable().update(
-        data: {'deleted_at': now},
-        matchingRows: (rows) => rows.eqOrNull('id', widget.idaluno),
-      );
+      final result = response.data;
+      if (result is! Map ||
+          result['success'] != true ||
+          result['authDeleted'] != true) {
+        throw Exception('Exclusão não confirmada pelo servidor.');
+      }
       if (!mounted) return;
       context.goNamed(ListaAlunosWidget.routeName);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível concluir a exclusão. Tente novamente.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
     } finally {
       if (mounted) safeSetState(() => _deleting = false);
     }

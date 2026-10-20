@@ -39,6 +39,7 @@ class _DetalhesTurmaWidgetState extends State<DetalhesTurmaWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   bool _controllersHydrated = false;
   bool _saving = false;
+  bool _savingProfessor = false;
 
   @override
   void initState() {
@@ -119,6 +120,7 @@ class _DetalhesTurmaWidgetState extends State<DetalhesTurmaWidget> {
   }
 
   Future<void> _salvarProfessor() async {
+    if (_savingProfessor) return;
     if (_model.dropDownProfessorValue == null ||
         _model.dropDownProfessorValue == '0' ||
         _model.dropDownProfessorValue!.isEmpty) {
@@ -131,22 +133,43 @@ class _DetalhesTurmaWidgetState extends State<DetalhesTurmaWidget> {
       );
       return;
     }
-    await TurmasTable().update(
-      data: {'professor_responsavel': _model.dropDownProfessorValue},
-      matchingRows: (rows) => rows.eqOrNull('id', widget.idTurma),
-    );
-    safeSetState(() {
-      _model.clearTurmaCache();
-      _model.requestCompleted1 = false;
-    });
-    await _model.waitForRequestCompleted1();
-    safeSetState(() {
-      _model.clearProfRespCache();
-      _model.requestCompleted2 = false;
-    });
-    await _model.waitForRequestCompleted2();
-    FFAppState().AlterarProfessorVisibility = false;
-    safeSetState(() {});
+    final professor = _model.dropDownProfessorValue;
+    safeSetState(() => _savingProfessor = true);
+    try {
+      final confirmed = await _confirm(
+        'Alterar o professor de todas as aulas desta turma? Os alunos serão mantidos.',
+      );
+      if (!confirmed || !mounted) return;
+      final result = await SupaFlow.client.rpc('alterar_professor_turma', params: {
+        'p_turma': widget.idTurma,
+        'p_professor': professor,
+      });
+      if (result is! Map || result['success'] != true || result['scope'] != 'turma') {
+        throw Exception('Troca de professor não confirmada.');
+      }
+      if (!mounted) return;
+      FFAppState().AlterarProfessorVisibility = false;
+      safeSetState(() {
+        _model.clearTurmaCache();
+        _model.clearProfRespCache();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Professor atualizado na turma e em todas as suas aulas.'),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Erro ao alterar o professor. Tente novamente.'),
+          backgroundColor: FlutterFlowTheme.of(context).error,
+        ),
+      );
+    } finally {
+      if (mounted) safeSetState(() => _savingProfessor = false);
+    }
   }
 
   Future<void> _inserirAgenda(TurmasRow turma) async {

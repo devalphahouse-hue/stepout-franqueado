@@ -37,6 +37,7 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
   late DetalhesAulaModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
   bool _hydrated = false;
+  bool _savingProfessor = false;
 
   @override
   void initState() {
@@ -75,6 +76,7 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
   }
 
   Future<void> _salvarProfessor() async {
+    if (_savingProfessor) return;
     if (_model.dropDownProfessorValue == null ||
         _model.dropDownProfessorValue == '0' ||
         _model.dropDownProfessorValue!.isEmpty) {
@@ -87,10 +89,27 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
       );
       return;
     }
+    safeSetState(() => _savingProfessor = true);
     try {
-      await AulasTable().update(
-        data: {'professor_responsavel': _model.dropDownProfessorValue},
-        matchingRows: (rows) => rows.eqOrNull('id', widget.idAula),
+      final result = await SupaFlow.client.rpc('alterar_professor_aula', params: {
+        'p_aula': widget.idAula,
+        'p_professor': _model.dropDownProfessorValue,
+      });
+      if (result is! Map || result['success'] != true || result['scope'] != 'aula') {
+        throw Exception('Troca de professor não confirmada.');
+      }
+      if (!mounted) return;
+      FFAppState().AlterarProfessorVisibility = false;
+      safeSetState(() {
+        _model.clearListaProfsCache();
+        _model.clearDetalhesCache();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Professor alterado somente nesta aula. Alunos mantidos.'),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
+          duration: const Duration(milliseconds: 3000),
+        ),
       );
     } catch (e) {
       if (mounted) {
@@ -102,32 +121,9 @@ class _DetalhesAulaWidgetState extends State<DetalhesAulaWidget> {
           ),
         );
       }
-      return;
+    } finally {
+      if (mounted) safeSetState(() => _savingProfessor = false);
     }
-    // Sucesso confirmado: o update concluiu. Mostra o feedback AGORA, antes do
-    // refresh de cache abaixo — os waitForApiRequestCompleted servem só pra
-    // atualizar a UI e, se um deles travar, não devem impedir o feedback.
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Professor atualizado com sucesso'),
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          duration: const Duration(milliseconds: 2500),
-        ),
-      );
-    }
-    safeSetState(() {
-      _model.clearListaProfsCache();
-      _model.apiRequestCompleted2 = false;
-    });
-    await _model.waitForApiRequestCompleted2();
-    safeSetState(() {
-      _model.clearDetalhesCache();
-      _model.apiRequestCompleted1 = false;
-    });
-    await _model.waitForApiRequestCompleted1();
-    FFAppState().AlterarProfessorVisibility = false;
-    safeSetState(() {});
   }
 
   Future<void> _removerConteudo(String? conteudoId) async {

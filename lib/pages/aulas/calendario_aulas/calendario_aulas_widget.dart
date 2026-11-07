@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'calendario_aulas_model.dart';
+import 'exportar_aulas_finalizadas.dart';
+import 'periodo_exportacao_dialog.dart';
 export 'calendario_aulas_model.dart';
 
 class CalendarioAulasWidget extends StatefulWidget {
@@ -25,6 +27,47 @@ class CalendarioAulasWidget extends StatefulWidget {
 class _CalendarioAulasWidgetState extends State<CalendarioAulasWidget> {
   late CalendarioAulasModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _exportando = false;
+
+  Future<void> _exportar() async {
+    final hoje = DateTime.now().toUtc().subtract(const Duration(hours: 3));
+    final periodo = await showDialog<DateTimeRange>(
+      context: context,
+      builder: (_) => PeriodoExportacaoDialog(
+        hoje: DateTime(hoje.year, hoje.month, hoje.day),
+      ),
+    );
+    if (periodo == null || !mounted) return;
+
+    setState(() => _exportando = true);
+    try {
+      final baixou = await exportarAulasFinalizadas(
+        franquia: FFAppState().idfranquia,
+        inicio: periodo.start,
+        fim: periodo.end,
+      );
+      if (!baixou && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nenhuma aula finalizada no período selecionado.'),
+          ),
+        );
+      }
+    } catch (error) {
+      debugPrint('Erro ao exportar aulas finalizadas: ${error.runtimeType}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível exportar as aulas. Tente novamente.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exportando = false);
+    }
+  }
 
   @override
   void initState() {
@@ -125,18 +168,17 @@ class _CalendarioAulasWidgetState extends State<CalendarioAulasWidget> {
                     children: [
                       _Header(
                         theme: theme,
-                        isCompact: isCompact,
+                        isCompact: width < 1050,
                         rangeLabel: _rangeLabel(context),
                         onPrev: () => _shift(false),
                         onNext: () => _shift(true),
                         onToday: _today,
+                        onExportar: _exportando ? null : _exportar,
+                        exportando: _exportando,
                       ),
                       const SizedBox(height: 20.0),
                       Expanded(
-                        child: _CalendarBoard(
-                          theme: theme,
-                          model: _model,
-                        ),
+                        child: _CalendarBoard(theme: theme, model: _model),
                       ),
                     ],
                   ),
@@ -162,6 +204,8 @@ class _Header extends StatelessWidget {
     required this.onPrev,
     required this.onNext,
     required this.onToday,
+    required this.onExportar,
+    required this.exportando,
   });
 
   final FlutterFlowTheme theme;
@@ -170,6 +214,8 @@ class _Header extends StatelessWidget {
   final VoidCallback onPrev;
   final VoidCallback onNext;
   final VoidCallback onToday;
+  final VoidCallback? onExportar;
+  final bool exportando;
 
   Widget _titleBlock() {
     return Row(
@@ -183,8 +229,11 @@ class _Header extends StatelessWidget {
             borderRadius: BorderRadius.circular(12.0),
           ),
           alignment: Alignment.center,
-          child: Icon(Icons.calendar_month_rounded,
-              color: theme.primary, size: 22.0),
+          child: Icon(
+            Icons.calendar_month_rounded,
+            color: theme.primary,
+            size: 22.0,
+          ),
         ),
         const SizedBox(width: 14.0),
         Flexible(
@@ -230,8 +279,11 @@ class _Header extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.date_range_rounded,
-              color: theme.secondaryText, size: 16.0),
+          Icon(
+            Icons.date_range_rounded,
+            color: theme.secondaryText,
+            size: 16.0,
+          ),
           const SizedBox(width: 8.0),
           Text(
             rangeLabel.isEmpty ? '—' : rangeLabel,
@@ -277,15 +329,34 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final exportar = FilledButton.icon(
+      onPressed: onExportar,
+      icon: exportando
+          ? const SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.download_rounded, size: 18),
+      label: Text(exportando ? 'Exportando…' : 'Exportar aulas'),
+      style: FilledButton.styleFrom(
+        backgroundColor: theme.primary,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(0, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
     if (isCompact) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _titleBlock(),
           const SizedBox(height: 12.0),
-          _rangePill(),
-          const SizedBox(height: 12.0),
-          _navButtons(),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [_rangePill(), _navButtons(), exportar],
+          ),
         ],
       );
     }
@@ -297,6 +368,8 @@ class _Header extends StatelessWidget {
         _rangePill(),
         const SizedBox(width: 12.0),
         _navButtons(),
+        const SizedBox(width: 12.0),
+        exportar,
       ],
     );
   }
